@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useUserLists } from '@/hooks/useSupabase'
+import { useListViewMode } from '@/hooks/useListViewMode'
 import { tmdb, posterUrl, PLACEHOLDER_POSTER } from '@/lib/tmdb'
 import { Link } from 'react-router-dom'
 import type { UserTitleStatus, TMDBMediaItem } from '@/types'
-import { Eye, Play, CheckCircle } from 'lucide-react'
+import { Eye, Play, CheckCircle, List, LayoutGrid } from 'lucide-react'
 
 type Tab = 'da_vedere' | 'in_corso' | 'visto'
 
@@ -16,6 +17,7 @@ const TABS: { key: Tab; label: string; icon: typeof Eye }[] = [
 export function MyLists() {
   const { titles, loading } = useUserLists()
   const [activeTab, setActiveTab] = useState<Tab>('da_vedere')
+  const { viewMode, setViewMode } = useListViewMode()
 
   const filtered = titles.filter(t => t.status === activeTab)
 
@@ -23,7 +25,33 @@ export function MyLists() {
 
   return (
     <div className="pb-20 px-4">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Le mie liste</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Le mie liste</h1>
+        <div className="flex items-center gap-1 bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 rounded-xl p-1">
+          <button
+            onClick={() => setViewMode('list')}
+            aria-label="Vista elenco"
+            className={`p-1.5 rounded-lg transition-colors ${
+              viewMode === 'list'
+                ? 'bg-accent/20 text-accent'
+                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+            }`}
+          >
+            <List size={18} />
+          </button>
+          <button
+            onClick={() => setViewMode('grid')}
+            aria-label="Vista griglia"
+            className={`p-1.5 rounded-lg transition-colors ${
+              viewMode === 'grid'
+                ? 'bg-accent/20 text-accent'
+                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+            }`}
+          >
+            <LayoutGrid size={18} />
+          </button>
+        </div>
+      </div>
 
       <div className="flex gap-2 mb-6">
         {TABS.map(tab => (
@@ -46,10 +74,16 @@ export function MyLists() {
         <p className="text-slate-500 dark:text-slate-400 text-center py-10">
           Nessun titolo in questa lista.
         </p>
-      ) : (
+      ) : viewMode === 'list' ? (
         <div className="space-y-3">
           {filtered.map(title => (
             <ListItem key={title.id} item={title} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {filtered.map(title => (
+            <GridItem key={title.id} item={title} />
           ))}
         </div>
       )}
@@ -93,6 +127,41 @@ function ListItem({ item }: { item: UserTitleStatus }) {
         <p className="text-slate-900 dark:text-white font-medium">{title}</p>
         <p className="text-slate-500 dark:text-slate-400 text-sm">{item.media_type === 'movie' ? 'Film' : 'Serie TV'}</p>
       </div>
+    </Link>
+  )
+}
+
+function GridItem({ item }: { item: UserTitleStatus }) {
+  const [details, setDetails] = useState<TMDBMediaItem | null>(null)
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const data = item.media_type === 'movie'
+          ? await tmdb.getMovieDetail(item.tmdb_id)
+          : await tmdb.getTvDetail(item.tmdb_id)
+        setDetails(data as TMDBMediaItem)
+      } catch {
+        // ignore
+      }
+    }
+    fetch()
+  }, [item])
+
+  if (!details) return null
+
+  const title = 'title' in details ? details.title : ('name' in details ? details.name : '')
+  const path = item.media_type === 'tv' ? `/tv/${item.tmdb_id}` : `/movie/${item.tmdb_id}`
+
+  return (
+    <Link to={path} className="group">
+      <img
+        src={posterUrl(details.poster_path, 'w342')}
+        alt={title}
+        className="w-full aspect-[2/3] object-cover rounded-xl group-hover:opacity-80 transition-opacity"
+        onError={e => { e.currentTarget.src = PLACEHOLDER_POSTER }}
+      />
+      <p className="text-slate-900 dark:text-white text-sm mt-1.5 line-clamp-2">{title}</p>
     </Link>
   )
 }
