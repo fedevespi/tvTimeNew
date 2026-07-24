@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { tmdb, posterUrl, backdropUrl } from '@/lib/tmdb'
+import { tmdb, posterUrl, backdropUrl, PLACEHOLDER_POSTER } from '@/lib/tmdb'
 import type { TMDBTvDetail, TMDBSeasonDetail } from '@/types'
 import { useTitleStatus, useWatchedEpisodes } from '@/hooks/useSupabase'
 import { useAuth } from '@/lib/auth'
@@ -76,6 +76,7 @@ export function TvDetail() {
           src={posterUrl(show.poster_path, 'w342')}
           alt={show.name}
           className="w-28 rounded-lg shadow-lg"
+          onError={e => { e.currentTarget.src = PLACEHOLDER_POSTER }}
         />
         <div className="flex-1 pt-10">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{show.name}</h1>

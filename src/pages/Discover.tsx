@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { tmdb, posterUrl } from '@/lib/tmdb'
+import { tmdb, posterUrl, PLACEHOLDER_POSTER } from '@/lib/tmdb'
 import { Link } from 'react-router-dom'
 import type { TMDBMediaItem } from '@/types'
 import { QuickAddButton } from '@/components/QuickAddButton'
@@ -80,6 +80,7 @@ function MediaCard({ item }: { item: TMDBMediaItem }) {
             alt={title}
             className="w-36 h-54 object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
+            onError={e => { e.currentTarget.src = PLACEHOLDER_POSTER }}
           />
         </div>
         <p className="text-slate-900 dark:text-white text-sm mt-2 line-clamp-2 font-medium">{title}</p>

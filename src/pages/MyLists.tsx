@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useUserLists } from '@/hooks/useSupabase'
-import { tmdb, posterUrl } from '@/lib/tmdb'
+import { tmdb, posterUrl, PLACEHOLDER_POSTER } from '@/lib/tmdb'
 import { Link } from 'react-router-dom'
 import type { UserTitleStatus, TMDBMediaItem } from '@/types'
 import { Eye, Play, CheckCircle } from 'lucide-react'
@@ -86,6 +86,7 @@ function ListItem({ item }: { item: UserTitleStatus }) {
           src={posterUrl(details.poster_path, 'w200')}
           alt={title}
           className="w-16 h-24 object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={e => { e.currentTarget.src = PLACEHOLDER_POSTER }}
         />
       </div>
       <div className="flex-1">

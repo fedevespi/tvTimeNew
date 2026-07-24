@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { tmdb, posterUrl } from '@/lib/tmdb'
+import { tmdb, posterUrl, PLACEHOLDER_POSTER } from '@/lib/tmdb'
 import { Link } from 'react-router-dom'
 import type { TMDBMediaItem } from '@/types'
 import { Search as SearchIcon, Loader2 } from 'lucide-react'
@@ -69,6 +69,7 @@ export function Search() {
                 alt={title}
                 className="w-full rounded-xl group-hover:opacity-80 transition-opacity"
                 loading="lazy"
+                onError={e => { e.currentTarget.src = PLACEHOLDER_POSTER }}
               />
               <p className="text-slate-900 dark:text-white text-sm mt-1 line-clamp-2">{title}</p>
             </Link>

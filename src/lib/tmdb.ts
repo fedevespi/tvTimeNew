@@ -46,8 +46,10 @@ export const tmdb = {
     tmdbFetch<unknown>(`/tv/${tvId}/season/${seasonNumber}`),
 }
 
+export const PLACEHOLDER_POSTER = '/placeholder-poster.svg'
+
 export function posterUrl(path: string | null, size: 'w200' | 'w342' | 'w500' | 'original' = 'w342'): string {
-  if (!path) return '/placeholder-poster.png'
+  if (!path) return PLACEHOLDER_POSTER
   return `${TMDB_IMAGE_BASE}/${size}${path}`
 }
 

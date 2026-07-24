@@ -1,6 +1,6 @@
 # tvTime — Sviluppo
 
-Ultimo aggiornamento: 2026-07-23
+Ultimo aggiornamento: 2026-07-24
 
 ---
 
@@ -79,6 +79,7 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Effetti glassmorphism (backdrop-blur) su header, nav bar, card
 - [x] Transizioni e animazioni smooth (hover effects, scale su card, sliding pill nav)
 - [x] Form con bordi arrotondati e focus states accent
+- [x] Placeholder poster SVG per immagini TMDB mancanti o fallite
 
 ### Gestione Errori
 - [x] Toast system per notifiche errore/successo (`useToast.tsx`)
@@ -152,10 +153,10 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Pagina "Informazioni" con attribuzione e crediti
 - [x] Gestione errori TMDB (messaggio + retry, nessun crash)
 - [x] Toast di errore per fallimenti Supabase (voto/commento/stato)
-- [ ] Placeholder poster per immagini mancanti
+- [x] Placeholder poster per immagini mancanti
 - [ ] Abilitare PWA con Node >= 20
 - [ ] Riabilitare email conferma per produzione
-- [ ] Deploy su Vercel
+- [x] Deploy su Vercel
 
 ---
 
