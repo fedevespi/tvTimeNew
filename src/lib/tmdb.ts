@@ -36,6 +36,21 @@ export const tmdb = {
   search: (query: string) =>
     tmdbFetch<{ results: unknown[] }>('/search/multi', { query }),
 
+  searchMovie: (query: string, year?: number) =>
+    tmdbFetch<{ results: Array<{ id: number; title: string }> }>('/search/movie', {
+      query,
+      ...(year ? { year: year.toString() } : {}),
+    }),
+
+  searchTv: (query: string) =>
+    tmdbFetch<{ results: Array<{ id: number; name: string }> }>('/search/tv', { query }),
+
+  findByExternalId: (id: string | number, source: 'tvdb_id' | 'imdb_id') =>
+    tmdbFetch<{
+      movie_results: Array<{ id: number; title: string; release_date?: string }>;
+      tv_results: Array<{ id: number; name: string; first_air_date?: string }>;
+    }>(`/find/${id}`, { external_source: source }),
+
   getMovieDetail: (id: number) =>
     tmdbFetch<unknown>(`/movie/${id}`, { append_to_response: 'credits' }),
 

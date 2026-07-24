@@ -1,6 +1,7 @@
 import { useAuth } from '@/lib/auth'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '@/hooks/useTheme'
+import { ImportZipCard } from '@/components/ImportZipCard'
 import { Settings as SettingsIcon, User, LogOut, ChevronRight, Sun, Moon } from 'lucide-react'
 
 export function Settings() {
@@ -51,6 +52,8 @@ export function Settings() {
             </button>
           </div>
         </div>
+
+        <ImportZipCard />
 
         <div className="bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur rounded-xl border border-slate-200 dark:border-slate-700/50 divide-y divide-slate-200/50 dark:divide-slate-700/50">
           <button

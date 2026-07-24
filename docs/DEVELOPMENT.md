@@ -79,6 +79,7 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Effetti glassmorphism (backdrop-blur) su header, nav bar, card
 - [x] Transizioni e animazioni smooth (hover effects, scale su card, sliding pill nav)
 - [x] Form con bordi arrotondati e focus states accent
+- [x] Documentazione e linee guida del Design System (`docs/DESIGN_SYSTEM.md`)
 - [x] Placeholder poster SVG per immagini TMDB mancanti o fallite
 
 ### Gestione Errori
@@ -99,9 +100,19 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Icona ingranaggio nell'header (`Settings.tsx`)
 - [x] Info account (email utente)
 - [x] Toggle tema luce/scuro con persistenza localStorage
+- [x] Importazione liste tramite file ZIP o JSON di TV Time (`ImportZipCard.tsx`, `importer.ts`)
 - [x] Link a pagina Informazioni
 - [x] Bottone logout
 - [x] Route protetta (`/settings`)
+
+### Importazione Dati (TV Time)
+- [x] Parsing client-side di archivi ZIP con `jszip` (`importer.ts`)
+- [x] Estrazione e normalizzazione JSON film (`RawMovie`) e serie TV (`RawSeries`)
+- [x] Risoluzione ID TMDB tramite TVDB ID (`/find/{tvdb_id}`), IMDb ID (`/find/{imdb_id}`) e fallback ricerca per titolo
+- [x] Mapping automatico dello stato del titolo (`da_vedere`, `in_corso`, `visto`)
+- [x] Salvataggio ed upsert batch in `user_title_status` e `user_episode_watched` su Supabase (idempotente e sicuro contro importazioni duplicate)
+- [x] UI Card responsive con anteprima conteggi, progress bar e report finale (`ImportZipCard.tsx`)
+- [x] Modal interattivo elemento per elemento (`UnresolvedTitlesModal.tsx`) per gestire i titoli non trovati con ricerca live TMDB, scelta tra 3 alternative o eliminazione senza inserimento
 
 ### Hook e Data Fetching
 - [x] `useTitleStatus` — stato di un titolo per l'utente (`useSupabase.ts`)
@@ -143,6 +154,7 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - **PWA**: manifest e apple-touch-icon configurati in `index.html`, plugin PWA da abilitare con Node >= 20
 - **Supabase**: email conferma disabilitata per sviluppo (da riabilitare in produzione)
 - **TMDB**: lingua italiana (`it-IT`) per tutte le chiamate API
+- **Importazione ZIP/JSON**: Utilizza `jszip` per decifrare l'archivio ZIP senza server. I titoli vengono mappati su TMDB interrogando in primis gli ID esterni (`tvdb_id`, `imdb_id`) tramite l'endpoint `/3/find/{id}` e in caso negativo tramite ricerca testuale. In caso di titoli non trovati, viene aperto un modal per la risoluzione elemento per elemento con suggerimenti live TMDB ed opzione di eliminazione. L'operazione è del tutto **idempotente**: eseguire l'importazione 2 o più volte consecutive agisce in `upsert` senza mai duplicare record nel database.
 - **Build**: `npx tsc --noEmit` e `npx vite build` entrambi OK
 
 ---
