@@ -16,7 +16,7 @@ export function MovieDetail() {
   const [error, setError] = useState('')
   const { user } = useAuth()
   const tmdbId = Number(id)
-  const { status, setStatus } = useTitleStatus(tmdbId, 'movie')
+  const { status, setStatus, removeStatus } = useTitleStatus(tmdbId, 'movie')
   const { reviews } = useReviews(tmdbId, 'movie')
 
   const load = useCallback(async () => {
@@ -74,7 +74,7 @@ export function MovieDetail() {
 
       <div className="px-4 mt-4">
         {user && (
-          <StatusButton status={status} onChange={setStatus} mediaType="movie" />
+          <StatusButton status={status} onChange={setStatus} onRemove={removeStatus} mediaType="movie" />
         )}
       </div>
 

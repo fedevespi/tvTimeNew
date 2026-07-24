@@ -17,7 +17,7 @@ export function TvDetail() {
   const [error, setError] = useState('')
   const { user } = useAuth()
   const tmdbId = Number(id)
-  const { status, setStatus } = useTitleStatus(tmdbId, 'tv')
+  const { status, setStatus, removeStatus } = useTitleStatus(tmdbId, 'tv')
   const totalEpisodes = show?.seasons
     ?.filter(s => s.season_number > 0)
     .reduce((acc, s) => acc + s.episode_count, 0) ?? 0
@@ -92,7 +92,7 @@ export function TvDetail() {
 
       <div className="px-4 mt-4">
         {user && (
-          <StatusButton status={status} onChange={setStatus} mediaType="tv" />
+          <StatusButton status={status} onChange={setStatus} onRemove={removeStatus} mediaType="tv" />
         )}
       </div>
 

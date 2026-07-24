@@ -34,7 +34,18 @@ export function useTitleStatus(tmdbId: number, mediaType: 'movie' | 'tv') {
     if (!error) setStatus(newStatus)
   }
 
-  return { status, loading, setStatus: setStatus_ }
+  const removeStatus = async () => {
+    if (!user) return
+    const { error } = await supabase
+      .from('user_title_status')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('tmdb_id', tmdbId)
+      .eq('media_type', mediaType)
+    if (!error) setStatus(null)
+  }
+
+  return { status, loading, setStatus: setStatus_, removeStatus }
 }
 
 export function useWatchedEpisodes(tmdbId: number, totalEpisodes: number) {
