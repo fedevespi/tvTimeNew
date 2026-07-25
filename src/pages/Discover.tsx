@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { tmdb, posterUrl, PLACEHOLDER_POSTER } from '@/lib/tmdb'
-import { Link } from 'react-router-dom'
+import { tmdb } from '@/lib/tmdb'
 import type { TMDBMediaItem } from '@/types'
-import { QuickAddButton } from '@/components/QuickAddButton'
+import { MediaCard } from '@/components/MediaCard'
 import { RefreshCw } from 'lucide-react'
 
 export function Discover() {
@@ -59,36 +58,11 @@ function Section({ title, items }: { title: string; items: TMDBMediaItem[] }) {
       <h2 className="text-xl font-bold text-slate-900 dark:text-white px-4 mb-3">{title}</h2>
       <div className="flex overflow-x-auto gap-3 px-4 pb-2 scrollbar-hide">
         {items.map(item => (
-          <MediaCard key={`${item.media_type}-${item.id}`} item={item} />
+          <div key={`${item.media_type}-${item.id}`} className="flex-shrink-0 w-36">
+            <MediaCard item={item} />
+          </div>
         ))}
       </div>
     </section>
-  )
-}
-
-function MediaCard({ item }: { item: TMDBMediaItem }) {
-  const mediaType = item.media_type === 'tv' ? 'tv' : 'movie'
-  const title = 'title' in item ? item.title : ('name' in item ? item.name : '')
-  const path = mediaType === 'tv' ? `/tv/${item.id}` : `/movie/${item.id}`
-
-  return (
-    <div className="relative flex-shrink-0 w-36 group">
-      <Link to={path}>
-        <div className="overflow-hidden rounded-xl">
-          <img
-            src={posterUrl(item.poster_path, 'w342')}
-            alt={title}
-            className="w-36 h-54 object-cover group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
-            onError={e => { e.currentTarget.src = PLACEHOLDER_POSTER }}
-          />
-        </div>
-        <p className="text-slate-900 dark:text-white text-sm mt-2 line-clamp-2 font-medium">{title}</p>
-        <p className="text-accent text-xs font-medium">
-          {item.vote_average.toFixed(1)} ★
-        </p>
-      </Link>
-      <QuickAddButton tmdbId={item.id} mediaType={mediaType} />
-    </div>
   )
 }
