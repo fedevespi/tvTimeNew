@@ -48,6 +48,37 @@ export function useTitleStatus(tmdbId: number, mediaType: 'movie' | 'tv') {
   return { status, loading, setStatus: setStatus_, removeStatus }
 }
 
+export async function updateTvTitleStatus(userId: string, tmdbId: number, totalEpisodes: number, watchedCount: number) {
+  const { data: current } = await supabase
+    .from('user_title_status')
+    .select('status')
+    .eq('user_id', userId)
+    .eq('tmdb_id', tmdbId)
+    .eq('media_type', 'tv')
+    .single()
+
+  const currentStatus = current?.status as TitleStatus | null | undefined
+
+  let newStatus: TitleStatus | null = null
+
+  if (watchedCount === 0) {
+    newStatus = 'da_vedere'
+  } else if (watchedCount >= totalEpisodes && totalEpisodes > 0) {
+    newStatus = 'visto'
+  } else if (currentStatus !== 'visto') {
+    newStatus = 'in_corso'
+  }
+
+  if (newStatus && newStatus !== currentStatus) {
+    await supabase
+      .from('user_title_status')
+      .upsert(
+        { user_id: userId, tmdb_id: tmdbId, media_type: 'tv', status: newStatus },
+        { onConflict: 'user_id,tmdb_id,media_type' }
+      )
+  }
+}
+
 export function useWatchedEpisodes(tmdbId: number, totalEpisodes: number) {
   const { user } = useAuth()
   const [episodes, setEpisodes] = useState<UserEpisodeWatched[]>([])
@@ -65,38 +96,6 @@ export function useWatchedEpisodes(tmdbId: number, totalEpisodes: number) {
   }
 
   useEffect(() => { fetchEpisodes() }, [user, tmdbId])
-
-  const updateTitleStatus = async (watchedCount: number) => {
-    if (!user) return
-    const { data: current } = await supabase
-      .from('user_title_status')
-      .select('status')
-      .eq('user_id', user.id)
-      .eq('tmdb_id', tmdbId)
-      .eq('media_type', 'tv')
-      .single()
-
-    const currentStatus = current?.status as TitleStatus | null | undefined
-
-    let newStatus: TitleStatus | null = null
-
-    if (watchedCount === 0) {
-      newStatus = 'da_vedere'
-    } else if (watchedCount >= totalEpisodes && totalEpisodes > 0) {
-      newStatus = 'visto'
-    } else if (currentStatus !== 'visto') {
-      newStatus = 'in_corso'
-    }
-
-    if (newStatus && newStatus !== currentStatus) {
-      await supabase
-        .from('user_title_status')
-        .upsert(
-          { user_id: user.id, tmdb_id: tmdbId, media_type: 'tv', status: newStatus },
-          { onConflict: 'user_id,tmdb_id,media_type' }
-        )
-    }
-  }
 
   const toggleEpisode = async (seasonNumber: number, episodeNumber: number) => {
     if (!user) return
@@ -120,7 +119,7 @@ export function useWatchedEpisodes(tmdbId: number, totalEpisodes: number) {
     }
     await fetchEpisodes()
     const newCount = existing ? episodes.length - 1 : episodes.length + 1
-    await updateTitleStatus(newCount)
+    await updateTvTitleStatus(user.id, tmdbId, totalEpisodes, newCount)
   }
 
   const isWatched = (seasonNumber: number, episodeNumber: number) =>
