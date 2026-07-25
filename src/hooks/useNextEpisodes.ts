@@ -5,6 +5,30 @@ import { tmdb } from '@/lib/tmdb'
 import { useUserLists, updateTvTitleStatus } from '@/hooks/useSupabase'
 import type { TMDBTvDetail, TMDBSeasonDetail, NextEpisodeItem } from '@/types'
 
+const FETCH_CONCURRENCY = 4
+
+async function mapWithConcurrencyLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let nextIndex = 0
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const current = nextIndex++
+      results[current] = await fn(items[current]!)
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, () => worker())
+  )
+
+  return results
+}
+
 export function useNextEpisodesToWatch() {
   const { user } = useAuth()
   const { titles, loading: listsLoading } = useUserLists()
@@ -42,7 +66,7 @@ export function useNextEpisodesToWatch() {
 
     const now = new Date()
 
-    const results = await Promise.all(inProgressTv.map(async (title): Promise<NextEpisodeItem | null> => {
+    const results = await mapWithConcurrencyLimit(inProgressTv, FETCH_CONCURRENCY, async (title): Promise<NextEpisodeItem | null> => {
       try {
         const show = await tmdb.getTvDetail(title.tmdb_id) as TMDBTvDetail
         const seasons = show.seasons
@@ -73,7 +97,7 @@ export function useNextEpisodesToWatch() {
       } catch {
         return null
       }
-    }))
+    })
 
     const sorted = results
       .filter((r): r is NextEpisodeItem => r !== null)
