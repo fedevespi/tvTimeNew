@@ -1,6 +1,6 @@
 # tvTime — Sviluppo
 
-Ultimo aggiornamento: 2026-07-24
+Ultimo aggiornamento: 2026-07-25
 
 ---
 
@@ -19,18 +19,18 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Logout (`Layout.tsx` header)
 - [x] Auto-creazione profilo via trigger database (`002_profile_trigger.sql`)
 
-### Scopri (Home)
-- [x] Trending (tutti i media) da TMDB (`Discover.tsx`)
-- [x] Film popolari da TMDB
-- [x] Serie TV popolari da TMDB
-- [x] Scroll orizzontale per ogni sezione
-- [x] Card con poster, titolo, voto
-- [x] Quick add button per aggiungere ai propri stati
+### Home
+- [x] Pagina placeholder in attesa della dashboard "Home" (`Home.tsx`), route `/`
+- [ ] Dashboard con serie in corso, prossime uscite ed episodi da controllare (v2)
 
-### Ricerca
-- [x] Ricerca multipla (film + serie TV) via TMDB (`Search.tsx`)
-- [x] Griglia responsive di risultati (3-5 colonne)
-- [x] Link ai dettagli del titolo
+### Scopri
+- [x] Input di ricerca sempre visibile in cima alla pagina (`Discover.tsx`, ex `Search.tsx`), route `/discover`
+- [x] Contenuto di default sotto l'input: Trending, Film Popolari, Serie TV Popolari da TMDB (spostato dalla vecchia pagina Scopri)
+- [x] Scroll orizzontale per ogni sezione di default
+- [x] Card con poster, titolo, voto, quick add button (`MediaCard.tsx`, componente condiviso tra sezioni di default e griglia risultati)
+- [x] Ricerca live: da 3 caratteri in poi (debounce 400ms) sostituisce il contenuto sotto l'input con una griglia responsive di risultati (3-5 colonne)
+- [x] Sotto i 3 caratteri torna istantaneamente al contenuto di default (nessun debounce sul ripristino)
+- [x] Gestione errori separata per contenuto di default e ricerca, con retry sul contenuto di default
 
 ### Pagina Dettaglio Film
 - [x] Backdrop con gradient overlay (`MovieDetail.tsx`)
@@ -70,12 +70,12 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 
 ### UI / Layout
 - [x] Header sticky con brand "tvTime", link Info, Settings e login/logout (`Layout.tsx`)
-- [x] Floating Bottom Navigation Bar con glassmorphism e sliding pill animation (Scopri / Cerca / Liste)
+- [x] Floating Bottom Navigation Bar con glassmorphism e sliding pill animation (Home / Scopri / Liste)
 - [x] Tema scuro e chiaro con toggle (`useTheme.tsx`, `Settings.tsx`)
 - [x] Default dark mode, override light via toggle
 - [x] Design responsive mobile-first
 - [x] Accent color arancione (#f97316) per bottoni primari e stati attivi
-- [x] Icone Lucide in tutta l'app (Compass, Search, List, Eye, Play, CheckCircle, Info, LogOut, Plus, RefreshCw, Settings, Sun, Moon)
+- [x] Icone Lucide in tutta l'app (Home, Compass, Search, List, Eye, Play, CheckCircle, Info, LogOut, Plus, RefreshCw, Settings, Sun, Moon)
 - [x] Effetti glassmorphism (backdrop-blur) su header, nav bar, card
 - [x] Transizioni e animazioni smooth (hover effects, scale su card, sliding pill nav)
 - [x] Form con bordi arrotondati e focus states accent
