@@ -6,7 +6,7 @@ import { Layout } from '@/components/Layout'
 import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
 import { Home } from '@/pages/Home'
-import { Search } from '@/pages/Search'
+import { Discover } from '@/pages/Discover'
 import { MovieDetail } from '@/pages/MovieDetail'
 import { TvDetail } from '@/pages/TvDetail'
 import { MyLists } from '@/pages/MyLists'
@@ -38,7 +38,7 @@ function AppRoutes() {
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
         <Route path="/register" element={user ? <Navigate to="/" replace /> : <Register />} />
         <Route path="/" element={<Home />} />
-        <Route path="/search" element={<Search />} />
+        <Route path="/discover" element={<Discover />} />
         <Route path="/movie/:id" element={<MovieDetail />} />
         <Route path="/tv/:id" element={<TvDetail />} />
         <Route

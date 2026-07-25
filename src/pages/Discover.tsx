@@ -7,7 +7,7 @@ import { Search as SearchIcon, Loader2, RefreshCw } from 'lucide-react'
 const MIN_QUERY_LENGTH = 3
 const DEBOUNCE_MS = 400
 
-export function Search() {
+export function Discover() {
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
 
