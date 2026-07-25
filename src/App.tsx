@@ -5,7 +5,7 @@ import { ThemeProvider } from '@/hooks/useTheme'
 import { Layout } from '@/components/Layout'
 import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
-import { Discover } from '@/pages/Discover'
+import { Home } from '@/pages/Home'
 import { Search } from '@/pages/Search'
 import { MovieDetail } from '@/pages/MovieDetail'
 import { TvDetail } from '@/pages/TvDetail'
@@ -37,7 +37,7 @@ function AppRoutes() {
       <Route element={<Layout />}>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
         <Route path="/register" element={user ? <Navigate to="/" replace /> : <Register />} />
-        <Route path="/" element={<Discover />} />
+        <Route path="/" element={<Home />} />
         <Route path="/search" element={<Search />} />
         <Route path="/movie/:id" element={<MovieDetail />} />
         <Route path="/tv/:id" element={<TvDetail />} />
