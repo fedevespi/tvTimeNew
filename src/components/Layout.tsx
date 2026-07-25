@@ -1,15 +1,15 @@
 import { useRef, useEffect, useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
-import { Compass, Search, List, Info, LogOut, Settings } from 'lucide-react'
+import { Home, Compass, List, Info, LogOut, Settings } from 'lucide-react'
 
 export function Layout() {
   const { user, signOut } = useAuth()
   const location = useLocation()
 
   const navItems = [
-    { path: '/', label: 'Scopri', icon: Compass },
-    { path: '/search', label: 'Cerca', icon: Search },
+    { path: '/', label: 'Home', icon: Home },
+    { path: '/discover', label: 'Scopri', icon: Compass },
     { path: '/lists', label: 'Liste', icon: List },
   ]
 
