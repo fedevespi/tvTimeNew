@@ -48,27 +48,28 @@ export function useNextEpisodesToWatch() {
     }
     setLoading(true)
 
-    const { data: watchedRows } = await supabase
-      .from('user_episode_watched')
-      .select('tmdb_id, season_number, episode_number, watched_at')
-      .eq('user_id', user.id)
-      .in('tmdb_id', inProgressTv.map(t => t.tmdb_id))
-
-    const watchedSet = new Set(
-      (watchedRows ?? []).map(r => `${r.tmdb_id}-${r.season_number}-${r.episode_number}`)
-    )
-
-    const lastWatchedAt = new Map<number, string>()
-    for (const r of watchedRows ?? []) {
-      const current = lastWatchedAt.get(r.tmdb_id)
-      if (!current || r.watched_at > current) lastWatchedAt.set(r.tmdb_id, r.watched_at)
-    }
-
     const now = new Date()
+    const lastWatchedAt = new Map<number, string>()
 
     const results = await mapWithConcurrencyLimit(inProgressTv, FETCH_CONCURRENCY, async (title): Promise<NextEpisodeItem | null> => {
       try {
-        const show = await tmdb.getTvDetail(title.tmdb_id) as TMDBTvDetail
+        const [show, watchedResult] = await Promise.all([
+          tmdb.getTvDetail(title.tmdb_id) as Promise<TMDBTvDetail>,
+          supabase
+            .from('user_episode_watched')
+            .select('season_number, episode_number, watched_at')
+            .eq('user_id', user.id)
+            .eq('tmdb_id', title.tmdb_id),
+        ])
+
+        const watchedRows = watchedResult.data ?? []
+        const watchedKeySet = new Set(watchedRows.map(r => `${r.season_number}-${r.episode_number}`))
+        const showLastWatchedAt = watchedRows.reduce<string | null>(
+          (max, r) => (!max || r.watched_at > max ? r.watched_at : max),
+          null
+        )
+        if (showLastWatchedAt) lastWatchedAt.set(title.tmdb_id, showLastWatchedAt)
+
         const seasons = show.seasons
           .filter(s => s.season_number > 0)
           .sort((a, b) => a.season_number - b.season_number)
@@ -78,8 +79,8 @@ export function useNextEpisodesToWatch() {
           const episodes = detail.episodes.slice().sort((a, b) => a.episode_number - b.episode_number)
 
           for (const ep of episodes) {
-            const key = `${title.tmdb_id}-${season.season_number}-${ep.episode_number}`
-            if (watchedSet.has(key)) continue
+            const key = `${season.season_number}-${ep.episode_number}`
+            if (watchedKeySet.has(key)) continue
             if (!ep.air_date || new Date(ep.air_date) > now) return null
 
             return {
