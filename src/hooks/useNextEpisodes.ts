@@ -26,12 +26,19 @@ export function useNextEpisodesToWatch() {
 
     const { data: watchedRows } = await supabase
       .from('user_episode_watched')
-      .select('tmdb_id, season_number, episode_number')
+      .select('tmdb_id, season_number, episode_number, watched_at')
       .eq('user_id', user.id)
+      .in('tmdb_id', inProgressTv.map(t => t.tmdb_id))
 
     const watchedSet = new Set(
       (watchedRows ?? []).map(r => `${r.tmdb_id}-${r.season_number}-${r.episode_number}`)
     )
+
+    const lastWatchedAt = new Map<number, string>()
+    for (const r of watchedRows ?? []) {
+      const current = lastWatchedAt.get(r.tmdb_id)
+      if (!current || r.watched_at > current) lastWatchedAt.set(r.tmdb_id, r.watched_at)
+    }
 
     const now = new Date()
 
@@ -68,7 +75,18 @@ export function useNextEpisodesToWatch() {
       }
     }))
 
-    setItems(results.filter((r): r is NextEpisodeItem => r !== null))
+    const sorted = results
+      .filter((r): r is NextEpisodeItem => r !== null)
+      .sort((a, b) => {
+        const aDate = lastWatchedAt.get(a.tmdbId)
+        const bDate = lastWatchedAt.get(b.tmdbId)
+        if (aDate && bDate) return bDate.localeCompare(aDate)
+        if (aDate) return -1
+        if (bDate) return 1
+        return 0
+      })
+
+    setItems(sorted)
     setLoading(false)
   }, [user, inProgressTv])
 
