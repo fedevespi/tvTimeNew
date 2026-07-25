@@ -96,6 +96,16 @@ export interface UserEpisodeWatched {
   watched_at: string
 }
 
+export interface NextEpisodeItem {
+  tmdbId: number
+  showName: string
+  showPosterPath: string | null
+  seasonNumber: number
+  episodeNumber: number
+  episodeName: string
+  stillPath: string | null
+}
+
 export interface Review {
   id: string
   user_id: string

@@ -72,3 +72,8 @@ export function backdropUrl(path: string | null, size: 'w780' | 'original' = 'w7
   if (!path) return ''
   return `${TMDB_IMAGE_BASE}/${size}${path}`
 }
+
+export function stillUrl(path: string | null, size: 'w300' | 'w780' | 'original' = 'w300'): string {
+  if (!path) return PLACEHOLDER_POSTER
+  return `${TMDB_IMAGE_BASE}/${size}${path}`
+}
