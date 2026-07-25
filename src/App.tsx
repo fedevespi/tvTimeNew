@@ -10,6 +10,7 @@ import { Discover } from '@/pages/Discover'
 import { MovieDetail } from '@/pages/MovieDetail'
 import { TvDetail } from '@/pages/TvDetail'
 import { MyLists } from '@/pages/MyLists'
+import { ContinueWatching } from '@/pages/ContinueWatching'
 import { Info } from '@/pages/Info'
 import { Settings } from '@/pages/Settings'
 import type { ReactNode } from 'react'
@@ -46,6 +47,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <MyLists />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/continue-watching"
+          element={
+            <ProtectedRoute>
+              <ContinueWatching />
             </ProtectedRoute>
           }
         />
