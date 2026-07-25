@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { tmdb, posterUrl, backdropUrl, PLACEHOLDER_POSTER } from '@/lib/tmdb'
 import type { TMDBTvDetail, TMDBSeasonDetail } from '@/types'
 import { useTitleStatus, useWatchedEpisodes } from '@/hooks/useSupabase'
@@ -10,6 +10,8 @@ import { RefreshCw } from 'lucide-react'
 
 export function TvDetail() {
   const { id } = useParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
+  const seasonParam = searchParams.get('season')
   const [show, setShow] = useState<TMDBTvDetail | null>(null)
   const [selectedSeason, setSelectedSeason] = useState<number>(1)
   const [seasonDetail, setSeasonDetail] = useState<TMDBSeasonDetail | null>(null)
@@ -32,15 +34,20 @@ export function TvDetail() {
       const tvData = data as TMDBTvDetail
       setShow(tvData)
       if (tvData.seasons?.length > 0) {
+        const requestedSeasonNumber = seasonParam !== null ? Number(seasonParam) : null
+        const requestedSeason = requestedSeasonNumber !== null
+          ? tvData.seasons.find(s => s.season_number === requestedSeasonNumber)
+          : undefined
         const firstVisible = tvData.seasons.find(s => s.season_number > 0) ?? tvData.seasons[0]
-        if (firstVisible) setSelectedSeason(firstVisible.season_number)
+        const target = requestedSeason ?? firstVisible
+        if (target) setSelectedSeason(target.season_number)
       }
     } catch {
       setError('Errore nel caricamento della serie.')
     } finally {
       setLoading(false)
     }
-  }, [id])
+  }, [id, seasonParam])
 
   useEffect(() => { load() }, [load])
 
