@@ -1,6 +1,6 @@
 # tvTime — Sviluppo
 
-Ultimo aggiornamento: 2026-07-25
+Ultimo aggiornamento: 2026-07-25 (Home: slider prossimi episodi)
 
 ---
 
@@ -20,8 +20,13 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Auto-creazione profilo via trigger database (`002_profile_trigger.sql`)
 
 ### Home
-- [x] Pagina placeholder in attesa della dashboard "Home" (`Home.tsx`), route `/`
-- [ ] Dashboard con serie in corso, prossime uscite ed episodi da controllare (v2)
+- [x] Slider "Prossimi episodi" (`NextEpisodesSlider.tsx`, `Home.tsx`), route `/`: mostra fino a 10 serie TV "in corso" con il prossimo episodio non ancora visto e già uscito, ordinate per ultimo aggiornamento
+- [x] Calcolo del prossimo episodio da vedere (`useNextEpisodes.ts`): scansiona le stagioni via TMDB e gli episodi già visti dell'utente; esclude le serie il cui prossimo episodio non è ancora uscito
+- [x] Card riutilizzabile `NextEpisodeCard.tsx`: immagine dell'episodio (fallback al poster della serie se mancante), nome serie + `SxEy`, pulsante rapido per segnare l'episodio come visto senza uscire dalla Home
+- [x] Click sulla card apre `TvDetail.tsx` con la stagione del prossimo episodio già preselezionata (parametro `?season=`)
+- [x] Pagina dedicata "Continua a guardare" (`ContinueWatching.tsx`, route protetta `/continue-watching`) con tutte le serie in corso, stessa card in griglia
+- [x] Sezione nascosta del tutto se non ci sono serie in corso con un episodio da vedere
+- [ ] Prossime uscite (film/serie in arrivo) nella Home (v2)
 
 ### Scopri
 - [x] Input di ricerca sempre visibile in cima alla pagina (`Discover.tsx`, ex `Search.tsx`), route `/discover`
