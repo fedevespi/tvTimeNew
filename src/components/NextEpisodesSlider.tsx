@@ -6,11 +6,11 @@ import { ChevronRight } from 'lucide-react'
 const MAX_ITEMS = 10
 
 export function NextEpisodesSlider() {
-  const { items, loading, markWatched } = useNextEpisodesToWatch()
+  const { items, loading, markWatched } = useNextEpisodesToWatch({ limit: MAX_ITEMS })
 
   if (loading || items.length === 0) return null
 
-  const visible = items.slice(0, MAX_ITEMS)
+  const visible = items
 
   return (
     <section className="mb-8">
