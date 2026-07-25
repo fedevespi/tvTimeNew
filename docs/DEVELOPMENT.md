@@ -1,6 +1,6 @@
 # tvTime — Sviluppo
 
-Ultimo aggiornamento: 2026-07-25 (Home: slider prossimi episodi)
+Ultimo aggiornamento: 2026-07-25 (Home: ottimizzazioni performance slider prossimi episodi)
 
 ---
 
@@ -20,8 +20,10 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Auto-creazione profilo via trigger database (`002_profile_trigger.sql`)
 
 ### Home
-- [x] Slider "Prossimi episodi" (`NextEpisodesSlider.tsx`, `Home.tsx`), route `/`: mostra fino a 10 serie TV "in corso" con il prossimo episodio non ancora visto e già uscito, ordinate per ultimo aggiornamento
+- [x] Slider "Prossimi episodi" (`NextEpisodesSlider.tsx`, `Home.tsx`), route `/`: mostra fino a 10 serie TV "in corso" con il prossimo episodio non ancora visto e già uscito, ordinate per ultimo episodio visto
 - [x] Calcolo del prossimo episodio da vedere (`useNextEpisodes.ts`): scansiona le stagioni via TMDB e gli episodi già visti dell'utente; esclude le serie il cui prossimo episodio non è ancora uscito
+- [x] Cache in-memory delle risposte TMDB per sessione (`tmdb.ts`) e query Supabase scoped per singola serie (non cumulative) per evitare troncamenti e richieste duplicate
+- [x] Ordinamento e riduzione del carico su Home tramite funzione Postgres economica `get_last_watched_per_show` (`003_last_watched_per_show.sql`): elabora solo le serie necessarie a riempire lo slider (con margine per le escluse), non tutte le serie in corso — la pagina "Continua a guardare" elabora comunque tutte le serie
 - [x] Card riutilizzabile `NextEpisodeCard.tsx`: immagine dell'episodio (fallback al poster della serie se mancante), nome serie + `SxEy`, pulsante rapido per segnare l'episodio come visto senza uscire dalla Home
 - [x] Click sulla card apre `TvDetail.tsx` con la stagione del prossimo episodio già preselezionata (parametro `?season=`)
 - [x] Pagina dedicata "Continua a guardare" (`ContinueWatching.tsx`, route protetta `/continue-watching`) con tutte le serie in corso, stessa card in griglia
