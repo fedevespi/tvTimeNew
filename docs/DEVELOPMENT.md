@@ -1,6 +1,6 @@
 # tvTime — Sviluppo
 
-Ultimo aggiornamento: 2026-07-25 (Home: ottimizzazioni performance slider prossimi episodi)
+Ultimo aggiornamento: 2026-07-28 (Le mie liste: divisione Serie TV / Film con anteprime e liste complete dedicate)
 
 ---
 
@@ -62,6 +62,16 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Filtraggio per stato
 - [x] Card con poster, titolo, tipo media (caricati da TMDB)
 - [x] Route protetta
+- [x] Divisione Serie TV / Film nei tab "Da vedere" e "Visto" tramite due sezioni (`TitleSection.tsx`); "In corso" resta un elenco unico perché contiene solo serie TV
+- [x] "In corso" ordinato dalla visione più recente alla più remota in base all'ultimo episodio segnato come visto (`useLastWatchedOrder.ts`), non per data di cambio stato; le serie senza episodi visti finiscono in fondo
+- [x] Ogni sezione mostra il contatore totale e un'anteprima dei primi elementi, con link "Vedi tutte" visibile solo se ci sono altri titoli oltre l'anteprima
+- [x] Dimensione dell'anteprima dipendente dalla vista attiva (`previewSize()` in `lib/lists.ts`): 6 elementi in griglia (3 righe da 2 colonne), 4 in elenco, dove ogni riga è più alta — l'atterraggio su "Le mie liste" resta compatto e si scaricano meno dettagli TMDB
+- [x] Pagina lista completa dedicata e linkabile (`ListDetail.tsx`, route protetta `/lists/:status/:mediaType`, es. `/lists/visto/movie`) con titolo contestuale ("Film visti", "Serie TV da vedere", …) e link di ritorno
+- [x] Badge con il numero di titoli su ogni tab
+- [x] Toggle lista/griglia estratto in `ViewModeToggle.tsx` e condiviso tra `MyLists` e `ListDetail`; l'anteprima rispetta la vista attiva (righe o griglia di poster) invece di usare un carosello orizzontale
+- [x] Elenco titoli riutilizzabile (`TitleCollection.tsx`) con skeleton animato per gli elementi in attesa dei dettagli TMDB, al posto del precedente `return null`
+- [x] Fallback "Titolo non disponibile" con placeholder poster per i titoli che TMDB non risolve: a caricamento concluso l'elemento resta cliccabile invece di mostrare uno skeleton pulsante all'infinito (`detailsLoading` propagato da `useTitleDetails` fino alle card)
+- [x] Etichette, path e helper di validazione delle liste centralizzati in `lib/lists.ts`
 
 ### Recensioni e Valutazioni
 - [x] Voto 1-10 (opzionale) (`ReviewForm.tsx`)
@@ -78,6 +88,7 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 ### UI / Layout
 - [x] Header sticky con brand "tvTime", link Info, Settings e login/logout (`Layout.tsx`)
 - [x] Floating Bottom Navigation Bar con glassmorphism e sliding pill animation (Home / Scopri / Liste)
+- [x] La voce di nav resta attiva anche sulle sotto-rotte (`/lists/:status/:mediaType` evidenzia "Liste"), prima il match era solo esatto e la pill spariva
 - [x] Tema scuro e chiaro con toggle (`useTheme.tsx`, `Settings.tsx`)
 - [x] Default dark mode, override light via toggle
 - [x] Design responsive mobile-first
@@ -126,7 +137,11 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] `useWatchedEpisodes` — episodi visti per una serie, con aggiornamento automatico stato
 - [x] `useReviews` — recensioni con join su profili
 - [x] `useUserLists` — tutti i titoli dell'utente
+- [x] `useTitleDetails` — titolo e poster TMDB per un insieme di titoli, in un unico batch a concorrenza limitata (`useTitleDetails.ts`)
 - [x] `useTheme` — stato dark/light con persistenza localStorage
+- [x] `useLastWatchedOrder` — riordina i titoli per ultimo episodio visto, attivabile via flag (`useLastWatchedOrder.ts`); usato da `MyLists` e `ListDetail` per il solo stato "In corso"
+- [x] `mapWithConcurrencyLimit` — helper di concorrenza condiviso (`lib/concurrency.ts`), estratto da `useNextEpisodes.ts` e riusato da `useTitleDetails`
+- [x] `fetchLastWatchedPerShow` / `compareByLastWatched` — accesso alla RPC `get_last_watched_per_show` e comparatore per data di ultima visione (`lib/lastWatched.ts`), estratti da `useNextEpisodes.ts` dove il comparatore era duplicato due volte inline
 
 ### Stato Automatico (Serie TV)
 - [x] Film: solo "Da vedere" o "Visto" (nessun "In corso")
@@ -161,6 +176,7 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - **PWA**: manifest e apple-touch-icon configurati in `index.html`, plugin PWA da abilitare con Node >= 20
 - **Supabase**: email conferma disabilitata per sviluppo (da riabilitare in produzione)
 - **TMDB**: lingua italiana (`it-IT`) per tutte le chiamate API
+- **Performance "Le mie liste"**: prima ogni riga faceva la propria chiamata TMDB in `useEffect`, quindi una lista da 150 titoli generava 150 richieste parallele non coordinate. Ora la fetch è centralizzata in `useTitleDetails`, invocato dalla pagina con i soli elementi effettivamente visibili (per l'anteprima: 6 serie + 6 film in griglia, 4 + 4 in elenco), con concorrenza 4 e aggiornamenti di stato accorpati ogni 100ms per evitare un re-render per ogni risposta. Attenzione nel modificare l'accorpamento: l'updater passato a `setDetails` **non deve chiudere sulla mappa `pending` mutabile**, perché React lo invoca in fase di render, quando `pending` è già stata svuotata — va sempre fatto uno snapshot (`Array.from(pending)`) prima di `pending.clear()`. I dettagli già risolti restano in mappa al cambio di tab, quindi tornare su una lista visitata non ricarica nulla
 - **Importazione ZIP/JSON**: Utilizza `jszip` per decifrare l'archivio ZIP senza server. I titoli vengono mappati su TMDB interrogando in primis gli ID esterni (`tvdb_id`, `imdb_id`) tramite l'endpoint `/3/find/{id}` e in caso negativo tramite ricerca testuale. In caso di titoli non trovati, viene aperto un modal per la risoluzione elemento per elemento con suggerimenti live TMDB ed opzione di eliminazione. L'operazione è del tutto **idempotente**: eseguire l'importazione 2 o più volte consecutive agisce in `upsert` senza mai duplicare record nel database.
 - **Build**: `npx tsc --noEmit` e `npx vite build` entrambi OK
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import type { ViewMode } from '@/types'
 
-type ViewMode = 'list' | 'grid'
+export type { ViewMode }
 
 export function useListViewMode() {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {

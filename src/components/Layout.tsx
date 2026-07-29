@@ -17,7 +17,12 @@ export function Layout() {
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([])
   const [pill, setPill] = useState({ left: 0, width: 0 })
 
-  const activeIndex = navItems.findIndex(i => location.pathname === i.path)
+  // Le sotto-rotte mantengono attiva la voce padre (es. /lists/visto/movie → Liste)
+  const activeIndex = navItems.findIndex(i =>
+    i.path === '/'
+      ? location.pathname === '/'
+      : location.pathname === i.path || location.pathname.startsWith(`${i.path}/`)
+  )
 
   useEffect(() => {
     const el = itemRefs.current[activeIndex]

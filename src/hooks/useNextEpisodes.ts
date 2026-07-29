@@ -3,32 +3,12 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { tmdb } from '@/lib/tmdb'
 import { useUserLists, updateTvTitleStatus } from '@/hooks/useSupabase'
+import { mapWithConcurrencyLimit } from '@/lib/concurrency'
+import { compareByLastWatched, fetchLastWatchedPerShow } from '@/lib/lastWatched'
 import type { TMDBTvDetail, TMDBSeasonDetail, NextEpisodeItem, UserTitleStatus } from '@/types'
 
 const FETCH_CONCURRENCY = 4
 const BATCH_BUFFER = 5
-
-async function mapWithConcurrencyLimit<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T) => Promise<R>
-): Promise<R[]> {
-  const results: R[] = new Array(items.length)
-  let nextIndex = 0
-
-  async function worker() {
-    while (nextIndex < items.length) {
-      const current = nextIndex++
-      results[current] = await fn(items[current]!)
-    }
-  }
-
-  await Promise.all(
-    Array.from({ length: Math.min(limit, items.length) }, () => worker())
-  )
-
-  return results
-}
 
 async function fetchNextEpisode(
   title: UserTitleStatus,
@@ -104,24 +84,11 @@ export function useNextEpisodesToWatch(options?: { limit?: number }) {
     }
     setLoading(true)
 
-    const { data: lastWatchedRows } = await supabase.rpc('get_last_watched_per_show', {
-      p_tmdb_ids: inProgressTv.map(t => t.tmdb_id),
-    })
+    const rpcLastWatchedAt = await fetchLastWatchedPerShow(inProgressTv.map(t => t.tmdb_id))
 
-    const rpcLastWatchedAt = new Map<number, string>(
-      (lastWatchedRows ?? [])
-        .filter((r: { tmdb_id: number; last_watched_at: string | null }) => r.last_watched_at !== null)
-        .map((r: { tmdb_id: number; last_watched_at: string }) => [r.tmdb_id, r.last_watched_at])
+    const candidates = [...inProgressTv].sort((a, b) =>
+      compareByLastWatched(rpcLastWatchedAt.get(a.tmdb_id), rpcLastWatchedAt.get(b.tmdb_id))
     )
-
-    const candidates = [...inProgressTv].sort((a, b) => {
-      const aDate = rpcLastWatchedAt.get(a.tmdb_id)
-      const bDate = rpcLastWatchedAt.get(b.tmdb_id)
-      if (aDate && bDate) return bDate.localeCompare(aDate)
-      if (aDate) return -1
-      if (bDate) return 1
-      return 0
-    })
 
     const now = new Date()
     const finalLastWatchedAt = new Map<number, string>()
@@ -143,14 +110,9 @@ export function useNextEpisodesToWatch(options?: { limit?: number }) {
       found.push(...batchResults.filter((r): r is NextEpisodeItem => r !== null))
     }
 
-    const sorted = found.sort((a, b) => {
-      const aDate = finalLastWatchedAt.get(a.tmdbId)
-      const bDate = finalLastWatchedAt.get(b.tmdbId)
-      if (aDate && bDate) return bDate.localeCompare(aDate)
-      if (aDate) return -1
-      if (bDate) return 1
-      return 0
-    })
+    const sorted = found.sort((a, b) =>
+      compareByLastWatched(finalLastWatchedAt.get(a.tmdbId), finalLastWatchedAt.get(b.tmdbId))
+    )
 
     setItems(limit === undefined ? sorted : sorted.slice(0, limit))
     setLoading(false)

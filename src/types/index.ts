@@ -126,3 +126,5 @@ export interface Profile {
 }
 
 export type MediaType = 'movie' | 'tv'
+
+export type ViewMode = 'list' | 'grid'

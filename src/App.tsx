@@ -10,6 +10,7 @@ import { Discover } from '@/pages/Discover'
 import { MovieDetail } from '@/pages/MovieDetail'
 import { TvDetail } from '@/pages/TvDetail'
 import { MyLists } from '@/pages/MyLists'
+import { ListDetail } from '@/pages/ListDetail'
 import { ContinueWatching } from '@/pages/ContinueWatching'
 import { Info } from '@/pages/Info'
 import { Settings } from '@/pages/Settings'
@@ -47,6 +48,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <MyLists />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/lists/:status/:mediaType"
+          element={
+            <ProtectedRoute>
+              <ListDetail />
             </ProtectedRoute>
           }
         />
