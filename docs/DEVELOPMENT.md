@@ -1,6 +1,6 @@
 # tvTime — Sviluppo
 
-Ultimo aggiornamento: 2026-07-29 (Home: nuove sezioni "In arrivo", statistiche e watchlist + caricamento riscritto)
+Ultimo aggiornamento: 2026-07-29 (Home protetta da login; nuove sezioni "In arrivo", statistiche e watchlist + caricamento riscritto)
 
 ---
 
@@ -15,11 +15,12 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 ### Autenticazione
 - [x] Registrazione con username, email, password (`Register.tsx`)
 - [x] Login con email/password (`Login.tsx`)
-- [x] Protected routes — reindirizza a `/login` se non autenticato (`App.tsx`)
+- [x] Protected routes — reindirizza a `/login` se non autenticato (`App.tsx`): Home (`/`), Liste, Continua a guardare, Impostazioni. Restano pubbliche Scopri, i dettagli film/serie e Info
 - [x] Logout (`Layout.tsx` header)
 - [x] Auto-creazione profilo via trigger database (`002_profile_trigger.sql`)
 
 ### Home
+- [x] Route protetta: senza sessione si viene reindirizzati a `/login` invece di vedere una Home vuota
 - [x] Slider "Prossimi episodi" (`NextEpisodesSlider.tsx`, `Home.tsx`), route `/`: mostra fino a 10 serie TV "in corso" con il prossimo episodio non ancora visto e già uscito, ordinate per ultimo episodio visto
 - [x] Calcolo del prossimo episodio da vedere (`useNextEpisodes.ts`): individua la stagione che contiene l'episodio dal progresso già noto per stagione e scarica **solo quella**; esclude le serie il cui prossimo episodio non è ancora uscito (che finiscono in "In arrivo")
 - [x] Riga statistiche in cima alla Home (`HomeStatsRow.tsx`, `useHomeStats.ts`): episodi visti negli ultimi 7 e 30 giorni, serie in corso, titoli da vedere, da un'unica RPC `get_home_stats`; i due contatori delle liste sono link alle liste corrispondenti

@@ -1,4 +1,3 @@
-import { useAuth } from '@/lib/auth'
 import { useNextEpisodesToWatch } from '@/hooks/useNextEpisodes'
 import { NextEpisodesSlider } from '@/components/NextEpisodesSlider'
 import { UpcomingSlider } from '@/components/UpcomingSlider'
@@ -7,12 +6,10 @@ import { HomeStatsRow } from '@/components/HomeStatsRow'
 
 const MAX_NEXT_EPISODES = 10
 
+/** Route protetta: senza sessione `ProtectedRoute` reindirizza a `/login`. */
 export function Home() {
-  const { user } = useAuth()
   // Una sola passata alimenta sia "Prossimi episodi" sia "In arrivo".
   const { items, upcoming, loading, markWatched } = useNextEpisodesToWatch({ limit: MAX_NEXT_EPISODES })
-
-  if (!user) return <div className="pb-20" />
 
   return (
     <div className="pb-20">
