@@ -1,6 +1,7 @@
 import JSZip from 'jszip'
 import { tmdb } from './tmdb'
 import { supabase } from './supabase'
+import { parseYear, pickBestMatch, splitTrailingYear, type MatchCandidate, type MatchQuery } from './titleMatch'
 
 export interface RawMovie {
   id?: { tvdb?: number; imdb?: string | null }
@@ -53,7 +54,43 @@ export interface ImportProgress {
     seriesImported: number
     episodesImported: number
     notFoundCount: number
+    /** Righe rifiutate dal database: l'importazione è riuscita solo in parte. */
+    notSavedCount: number
+    /** Messaggio dell'ultimo errore di salvataggio, per capire cosa non è passato. */
+    saveError?: string
   }
+}
+
+interface TitleStatusRecord {
+  user_id: string
+  tmdb_id: number
+  media_type: 'movie' | 'tv'
+  status: 'da_vedere' | 'in_corso' | 'visto'
+}
+
+interface EpisodeWatchedRecord {
+  user_id: string
+  tmdb_id: number
+  season_number: number
+  episode_number: number
+  watched_at?: string
+}
+
+const TITLE_STATUS_CONFLICT = 'user_id,tmdb_id,media_type'
+const EPISODE_WATCHED_CONFLICT = 'user_id,tmdb_id,season_number,episode_number'
+
+async function upsertTitleStatus(rows: TitleStatusRecord[]): Promise<string | null> {
+  const { error } = await supabase
+    .from('user_title_status')
+    .upsert(rows, { onConflict: TITLE_STATUS_CONFLICT })
+  return error?.message ?? null
+}
+
+async function upsertEpisodesWatched(rows: EpisodeWatchedRecord[]): Promise<string | null> {
+  const { error } = await supabase
+    .from('user_episode_watched')
+    .upsert(rows, { onConflict: EPISODE_WATCHED_CONFLICT })
+  return error?.message ?? null
 }
 
 function safeJsonParse(text: string): unknown {
@@ -154,97 +191,109 @@ export async function parseFileToImportData(file: File): Promise<ImportData> {
   return { movies: uniqueMovies, series: uniqueSeries }
 }
 
-async function resolveMovieTmdbId(movie: RawMovie): Promise<number | null> {
-  const imdb = movie.id?.imdb
-  const tvdb = movie.id?.tvdb
-
-  if (imdb) {
-    try {
-      const res = await tmdb.findByExternalId(imdb, 'imdb_id')
-      const matches = res?.movie_results
-      if (matches && matches.length > 0 && matches[0]) {
-        return matches[0].id
-      }
-    } catch {
-      // Continue to next lookup
-    }
-  }
-
-  if (tvdb) {
-    try {
-      const res = await tmdb.findByExternalId(tvdb, 'tvdb_id')
-      const matches = res?.movie_results
-      if (matches && matches.length > 0 && matches[0]) {
-        return matches[0].id
-      }
-    } catch {
-      // Continue to next lookup
-    }
-  }
-
-  // Fallback to title search
+/**
+ * Un id esterno (imdb/tvdb) identifica l'opera senza ambiguità: il primo
+ * risultato di `/find` si può accettare così com'è. È la ricerca per titolo che
+ * va verificata, e per questo passa da `pickBestMatch`.
+ */
+async function resolveByExternalId(
+  id: string | number,
+  source: 'imdb_id' | 'tvdb_id',
+  type: 'movie' | 'tv'
+): Promise<number | null> {
   try {
-    const res = await tmdb.searchMovie(movie.title, movie.year)
-    const matches = res?.results
-    if (matches && matches.length > 0 && matches[0]) {
-      return matches[0].id
-    }
-    // Try without year if year search yielded no results
-    if (movie.year) {
-      const resNoYear = await tmdb.searchMovie(movie.title)
-      const matchesNoYear = resNoYear?.results
-      if (matchesNoYear && matchesNoYear.length > 0 && matchesNoYear[0]) {
-        return matchesNoYear[0].id
-      }
+    const res = await tmdb.findByExternalId(id, source)
+    const matches = type === 'movie' ? res?.movie_results : res?.tv_results
+    return matches?.[0]?.id ?? null
+  } catch {
+    return null
+  }
+}
+
+async function resolveByExternalIds(
+  ids: { imdb?: string | null; tvdb?: number } | undefined,
+  type: 'movie' | 'tv'
+): Promise<number | null> {
+  if (ids?.imdb) {
+    const found = await resolveByExternalId(ids.imdb, 'imdb_id', type)
+    if (found !== null) return found
+  }
+  if (ids?.tvdb) {
+    const found = await resolveByExternalId(ids.tvdb, 'tvdb_id', type)
+    if (found !== null) return found
+  }
+  return null
+}
+
+function movieCandidates(
+  results: Array<{ id: number; title: string; original_title?: string; release_date?: string }> | undefined
+): MatchCandidate[] {
+  return (results ?? []).map(result => ({
+    id: result.id,
+    title: result.title,
+    originalTitle: result.original_title,
+    year: parseYear(result.release_date),
+  }))
+}
+
+function tvCandidates(
+  results: Array<{ id: number; name: string; original_name?: string; first_air_date?: string }> | undefined
+): MatchCandidate[] {
+  return (results ?? []).map(result => ({
+    id: result.id,
+    title: result.name,
+    originalTitle: result.original_name,
+    year: parseYear(result.first_air_date),
+  }))
+}
+
+/**
+ * Cerca il titolo e restituisce solo un abbinamento convincente. Se la ricerca
+ * vincolata all'anno non produce nulla si allarga senza vincolo, ma la verifica
+ * sul risultato resta la stessa: l'anno continua a pesare nel punteggio.
+ */
+async function resolveByTitle(
+  query: MatchQuery,
+  search: (title: string, year?: number) => Promise<MatchCandidate[]>
+): Promise<number | null> {
+  try {
+    const narrow = await search(query.title, query.year)
+    const match = pickBestMatch(narrow, query)
+    if (match) return match.id
+
+    if (query.year !== undefined) {
+      const wide = await search(query.title)
+      const wideMatch = pickBestMatch(wide, query)
+      if (wideMatch) return wideMatch.id
     }
   } catch {
-    // Failed search
+    // Ricerca non riuscita: l'elemento finisce fra i non risolti
   }
 
   return null
 }
 
+async function resolveMovieTmdbId(movie: RawMovie): Promise<number | null> {
+  const byId = await resolveByExternalIds(movie.id, 'movie')
+  if (byId !== null) return byId
+
+  const fromTitle = splitTrailingYear(movie.title)
+  return resolveByTitle(
+    { title: fromTitle.title, year: movie.year ?? fromTitle.year },
+    async (title, year) => movieCandidates((await tmdb.searchMovie(title, year)).results)
+  )
+}
+
 async function resolveSeriesTmdbId(show: RawSeries): Promise<number | null> {
-  const imdb = show.id?.imdb
-  const tvdb = show.id?.tvdb
+  const byId = await resolveByExternalIds(show.id, 'tv')
+  if (byId !== null) return byId
 
-  if (imdb) {
-    try {
-      const res = await tmdb.findByExternalId(imdb, 'imdb_id')
-      const matches = res?.tv_results
-      if (matches && matches.length > 0 && matches[0]) {
-        return matches[0].id
-      }
-    } catch {
-      // Continue to next lookup
-    }
-  }
-
-  if (tvdb) {
-    try {
-      const res = await tmdb.findByExternalId(tvdb, 'tvdb_id')
-      const matches = res?.tv_results
-      if (matches && matches.length > 0 && matches[0]) {
-        return matches[0].id
-      }
-    } catch {
-      // Continue to next lookup
-    }
-  }
-
-  // Fallback to title search
-  try {
-    const cleanTitle = show.title.replace(/\s*\(\d{4}\)$/, '')
-    const res = await tmdb.searchTv(cleanTitle)
-    const matches = res?.results
-    if (matches && matches.length > 0 && matches[0]) {
-      return matches[0].id
-    }
-  } catch {
-    // Failed search
-  }
-
-  return null
+  // L'anno fra parentesi ("Doctor Who (2005)") distingue la serie dal reboot
+  // omonimo: prima veniva scartato insieme alle parentesi.
+  return resolveByTitle(
+    splitTrailingYear(show.title),
+    async (title, year) => tvCandidates((await tmdb.searchTv(title, year)).results)
+  )
 }
 
 export async function saveResolvedItemToSupabase(
@@ -258,19 +307,13 @@ export async function saveResolvedItemToSupabase(
   if (item.type === 'movie') {
     const movie = item.raw as RawMovie
     status = movie.is_watched || movie.watched_at ? 'visto' : 'da_vedere'
-    await supabase.from('user_title_status').upsert(
+    const error = await upsertTitleStatus([
       { user_id: userId, tmdb_id: tmdbId, media_type: 'movie', status },
-      { onConflict: 'user_id,tmdb_id,media_type' }
-    )
+    ])
+    if (error) throw new Error(error)
   } else {
     const show = item.raw as RawSeries
-    const episodeWatchedRecords: Array<{
-      user_id: string
-      tmdb_id: number
-      season_number: number
-      episode_number: number
-      watched_at?: string
-    }> = []
+    const episodeWatchedRecords: EpisodeWatchedRecord[] = []
 
     if (show.seasons && show.seasons.length > 0) {
       for (const season of show.seasons) {
@@ -296,15 +339,14 @@ export async function saveResolvedItemToSupabase(
       status = 'in_corso'
     }
 
-    await supabase.from('user_title_status').upsert(
+    const statusError = await upsertTitleStatus([
       { user_id: userId, tmdb_id: tmdbId, media_type: 'tv', status },
-      { onConflict: 'user_id,tmdb_id,media_type' }
-    )
+    ])
+    if (statusError) throw new Error(statusError)
 
     if (episodeWatchedRecords.length > 0) {
-      await supabase.from('user_episode_watched').upsert(episodeWatchedRecords, {
-        onConflict: 'user_id,tmdb_id,season_number,episode_number',
-      })
+      const episodesError = await upsertEpisodesWatched(episodeWatchedRecords)
+      if (episodesError) throw new Error(episodesError)
     }
   }
 
@@ -325,20 +367,8 @@ export async function importDataToSupabase(
 
   const unresolvedItems: UnresolvedItem[] = []
 
-  const titleStatusRecords: Array<{
-    user_id: string
-    tmdb_id: number
-    media_type: 'movie' | 'tv'
-    status: 'da_vedere' | 'in_corso' | 'visto'
-  }> = []
-
-  const episodeWatchedRecords: Array<{
-    user_id: string
-    tmdb_id: number
-    season_number: number
-    episode_number: number
-    watched_at?: string
-  }> = []
+  const titleStatusRecords: TitleStatusRecord[] = []
+  const episodeWatchedRecords: EpisodeWatchedRecord[] = []
 
   // 1. Process Movies
   for (const movie of data.movies) {
@@ -446,20 +476,29 @@ export async function importDataToSupabase(
     message: 'Salvataggio dati su Supabase in corso...',
   })
 
+  // Un batch rifiutato non ferma i successivi — il resto dei dati va comunque
+  // salvato — ma non passa più inosservato: le righe perse vengono contate e
+  // riportate, così l'esito non dichiara un successo che non c'è stato.
+  let notSavedCount = 0
+  let saveError: string | undefined
+
+  const noteFailure = (rows: number, message: string) => {
+    notSavedCount += rows
+    saveError = message
+  }
+
   // Upsert title statuses in batches of 50
   for (let i = 0; i < titleStatusRecords.length; i += 50) {
     const chunk = titleStatusRecords.slice(i, i + 50)
-    await supabase.from('user_title_status').upsert(chunk, {
-      onConflict: 'user_id,tmdb_id,media_type',
-    })
+    const error = await upsertTitleStatus(chunk)
+    if (error) noteFailure(chunk.length, error)
   }
 
   // Upsert episode watched in batches of 100
   for (let i = 0; i < episodeWatchedRecords.length; i += 100) {
     const chunk = episodeWatchedRecords.slice(i, i + 100)
-    await supabase.from('user_episode_watched').upsert(chunk, {
-      onConflict: 'user_id,tmdb_id,season_number,episode_number',
-    })
+    const error = await upsertEpisodesWatched(chunk)
+    if (error) noteFailure(chunk.length, error)
   }
 
   const stats = {
@@ -467,13 +506,17 @@ export async function importDataToSupabase(
     seriesImported,
     episodesImported,
     notFoundCount,
+    notSavedCount,
+    saveError,
   }
 
   onProgress({
     phase: 'complete',
     totalItems,
     processedItems,
-    message: `Importazione completata! ${moviesImported} film, ${seriesImported} serie e ${episodesImported} episodi salvati.`,
+    message: notSavedCount > 0
+      ? `Importazione conclusa con errori: ${notSavedCount} righe non salvate.`
+      : `Importazione completata! ${moviesImported} film, ${seriesImported} serie e ${episodesImported} episodi salvati.`,
     stats,
   })
 

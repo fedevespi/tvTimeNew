@@ -132,8 +132,10 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Parsing client-side di archivi ZIP con `jszip` (`importer.ts`)
 - [x] Estrazione e normalizzazione JSON film (`RawMovie`) e serie TV (`RawSeries`)
 - [x] Risoluzione ID TMDB tramite TVDB ID (`/find/{tvdb_id}`), IMDb ID (`/find/{imdb_id}`) e fallback ricerca per titolo
+- [x] Verifica dell'abbinamento sulla ricerca per titolo (`lib/titleMatch.ts`): similarità sul titolo normalizzato, confronto anche con il titolo originale e vincolo sull'anno — un risultato non convincente finisce fra i "non risolti" invece di essere associato a caso
 - [x] Mapping automatico dello stato del titolo (`da_vedere`, `in_corso`, `visto`)
 - [x] Salvataggio ed upsert batch in `user_title_status` e `user_episode_watched` su Supabase (idempotente e sicuro contro importazioni duplicate)
+- [x] Errori di salvataggio contati e riportati (`notSavedCount`, `saveError`): un batch rifiutato non ferma i successivi ma l'esito non dichiara più un successo che non c'è stato
 - [x] UI Card responsive con anteprima conteggi, progress bar e report finale (`ImportZipCard.tsx`)
 - [x] Modal interattivo elemento per elemento (`UnresolvedTitlesModal.tsx`) per gestire i titoli non trovati con ricerca live TMDB, scelta tra 3 alternative o eliminazione senza inserimento
 
@@ -206,6 +208,8 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 
   Due punti a cui fare attenzione toccando `useNextEpisodes.ts`: l'ordine dei candidati è già l'ordine finale (ordinati per ultima visione **prima** delle richieste TMDB), ed è ciò che consente di mostrare i risultati parziali senza riordinarli dopo — se si cambia criterio di ordinamento va rivisto anche il rendering progressivo. E se i conteggi indicano tutte le stagioni complete si ricontrolla comunque l'ultima, perché `episode_count` di TMDB non sempre coincide con gli episodi effettivamente elencati.
 - **Importazione ZIP/JSON**: Utilizza `jszip` per decifrare l'archivio ZIP senza server. I titoli vengono mappati su TMDB interrogando in primis gli ID esterni (`tvdb_id`, `imdb_id`) tramite l'endpoint `/3/find/{id}` e in caso negativo tramite ricerca testuale. In caso di titoli non trovati, viene aperto un modal per la risoluzione elemento per elemento con suggerimenti live TMDB ed opzione di eliminazione. L'operazione è del tutto **idempotente**: eseguire l'importazione 2 o più volte consecutive agisce in `upsert` senza mai duplicare record nel database.
+
+  Attenzione alla ricerca testuale: un id esterno identifica l'opera senza ambiguità, ma la ricerca per titolo no. Prima il fallback accettava `results[0]` qualunque fosse, e ogni titolo non azzeccato al primo colpo veniva legato a un'opera diversa che poi compariva nelle liste dell'utente al posto di quella vera. Ora il risultato passa da `pickBestMatch` (`lib/titleMatch.ts`), che pretende una similarità minima sul titolo normalizzato — confrontato **sia** con `title`/`name` **sia** con `original_title`/`original_name`, perché la ricerca gira in `it-IT` mentre gli export di TV Time sono in inglese — e corregge il punteggio con l'anno (±1 accettato, oltre respinto anche a titolo identico: è il caso dei reboot omonimi, per i quali l'anno fra parentesi in coda al titolo, "Doctor Who (2005)", non va più scartato ma usato). Se nessun candidato convince l'elemento finisce fra i "non risolti" e si sceglie a mano: **meglio nessun abbinamento che uno sbagliato salvato in silenzio**. Toccando le soglie di `titleMatch.ts` si sposta questo compromesso — alzarle manda più titoli nel modal, abbassarle riporta gli abbinamenti a caso.
 - **Build**: `npx tsc --noEmit` e `npx vite build` entrambi OK
 
 ---

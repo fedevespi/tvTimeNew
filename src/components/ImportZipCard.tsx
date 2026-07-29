@@ -78,7 +78,11 @@ export function ImportZipCard() {
       }
     } catch (err: unknown) {
       console.error(err)
-      setError('Si è verificato un errore durante l\'importazione dei dati nel database.')
+      setError(
+        err instanceof Error
+          ? `Errore durante l'importazione nel database: ${err.message}`
+          : 'Si è verificato un errore durante l\'importazione dei dati nel database.'
+      )
     } finally {
       setLoading(false)
     }
@@ -227,10 +231,24 @@ export function ImportZipCard() {
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-emerald-500 font-semibold text-sm bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-                <CheckCircle2 size={20} className="shrink-0" />
-                <span>Importazione completata con successo!</span>
-              </div>
+              {progress.stats && progress.stats.notSavedCount > 0 ? (
+                <div className="flex items-start gap-2 text-amber-500 font-semibold text-sm bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+                  <AlertCircle size={20} className="shrink-0 mt-0.5" />
+                  <div className="space-y-1 min-w-0">
+                    <p>Importazione parziale: {progress.stats.notSavedCount} righe non salvate.</p>
+                    {progress.stats.saveError && (
+                      <p className="font-normal text-xs text-amber-500/80 break-words">
+                        {progress.stats.saveError}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-emerald-500 font-semibold text-sm bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
+                  <CheckCircle2 size={20} className="shrink-0" />
+                  <span>Importazione completata con successo!</span>
+                </div>
+              )}
 
               {progress.stats && (
                 <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -290,6 +308,7 @@ export function ImportZipCard() {
               return {
                 ...prev,
                 stats: {
+                  ...prev.stats,
                   moviesImported: prev.stats.moviesImported + resolvedDelta.movies,
                   seriesImported: prev.stats.seriesImported + resolvedDelta.series,
                   episodesImported: prev.stats.episodesImported + resolvedDelta.episodes,

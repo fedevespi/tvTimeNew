@@ -111,14 +111,25 @@ export const tmdb = {
   search: (query: string) =>
     tmdbFetch<{ results: unknown[] }>('/search/multi', { query }),
 
+  /**
+   * `original_title` e `release_date` servono a verificare l'abbinamento: la
+   * risposta è in italiano, mentre il titolo cercato arriva spesso in inglese.
+   */
   searchMovie: (query: string, year?: number) =>
-    tmdbFetch<{ results: Array<{ id: number; title: string }> }>('/search/movie', {
+    tmdbFetch<{
+      results: Array<{ id: number; title: string; original_title?: string; release_date?: string }>
+    }>('/search/movie', {
       query,
       ...(year ? { year: year.toString() } : {}),
     }),
 
-  searchTv: (query: string) =>
-    tmdbFetch<{ results: Array<{ id: number; name: string }> }>('/search/tv', { query }),
+  searchTv: (query: string, year?: number) =>
+    tmdbFetch<{
+      results: Array<{ id: number; name: string; original_name?: string; first_air_date?: string }>
+    }>('/search/tv', {
+      query,
+      ...(year ? { first_air_date_year: year.toString() } : {}),
+    }),
 
   findByExternalId: (id: string | number, source: 'tvdb_id' | 'imdb_id') =>
     tmdbFetch<{

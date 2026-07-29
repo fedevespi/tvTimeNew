@@ -6,6 +6,7 @@ import {
   saveResolvedItemToSupabase,
 } from '@/lib/importer'
 import {
+  AlertCircle,
   HelpCircle,
   Search,
   Check,
@@ -38,6 +39,8 @@ export function UnresolvedTitlesModal({ userId, items, onClose }: Props) {
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [searching, setSearching] = useState(false)
   const [saving, setSaving] = useState(false)
+  /** Salvataggio rifiutato: va detto, altrimenti sembra che l'associazione sia andata a buon fine. */
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const [deltaStats, setDeltaStats] = useState({ movies: 0, series: 0, episodes: 0 })
 
@@ -84,6 +87,7 @@ export function UnresolvedTitlesModal({ userId, items, onClose }: Props) {
   const handleSelectCandidate = async (candidateId: number) => {
     if (!currentItem || saving) return
     setSaving(true)
+    setSaveError(null)
 
     try {
       const res = await saveResolvedItemToSupabase(userId, currentItem, candidateId)
@@ -99,12 +103,18 @@ export function UnresolvedTitlesModal({ userId, items, onClose }: Props) {
       advanceNext()
     } catch (err) {
       console.error(err)
+      setSaveError(
+        err instanceof Error
+          ? `Salvataggio non riuscito: ${err.message}`
+          : 'Salvataggio non riuscito.'
+      )
     } finally {
       setSaving(false)
     }
   }
 
   const handleSkipOrDelete = () => {
+    setSaveError(null)
     advanceNext()
   }
 
@@ -186,6 +196,13 @@ export function UnresolvedTitlesModal({ userId, items, onClose }: Props) {
             </button>
           </div>
         </form>
+
+        {saveError && (
+          <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-xs">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <span className="break-words">{saveError}</span>
+          </div>
+        )}
 
         {/* Candidates List */}
         <div className="space-y-2">
