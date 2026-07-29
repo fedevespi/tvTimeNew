@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
-import type { UserTitleStatus, UserEpisodeWatched, Review, TitleStatus } from '@/types'
+import type { UserTitleStatus, UserEpisodeWatched, Review, TitleStatus, MediaType } from '@/types'
 
 export function useTitleStatus(tmdbId: number, mediaType: 'movie' | 'tv') {
   const { user } = useAuth()
@@ -156,23 +156,42 @@ export function useReviews(tmdbId: number, mediaType: 'movie' | 'tv', seasonNumb
   return { reviews, loading }
 }
 
-export function useUserLists() {
+/**
+ * Titoli dell'utente, ordinati dal più recente. I filtri sono opzionali e
+ * applicati **lato server**: la Home chiede solo le serie "in corso" o solo la
+ * watchlist invece di scaricare l'intera libreria per filtrarla in memoria.
+ */
+export function useUserLists(filters?: { status?: TitleStatus; mediaType?: MediaType }) {
   const { user } = useAuth()
+  // Dipendenze primitive: `filters` è un literal nuovo a ogni render.
+  const status = filters?.status
+  const mediaType = filters?.mediaType
   const [titles, setTitles] = useState<UserTitleStatus[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user) { setLoading(false); return }
-    supabase
+    if (!user) { setTitles([]); setLoading(false); return }
+
+    let cancelled = false
+    setLoading(true)
+
+    let query = supabase
       .from('user_title_status')
       .select('*')
       .eq('user_id', user.id)
+    if (status) query = query.eq('status', status)
+    if (mediaType) query = query.eq('media_type', mediaType)
+
+    query
       .order('updated_at', { ascending: false })
       .then(({ data }) => {
+        if (cancelled) return
         setTitles(data ?? [])
         setLoading(false)
       })
-  }, [user])
+
+    return () => { cancelled = true }
+  }, [user, status, mediaType])
 
   return { titles, loading }
 }

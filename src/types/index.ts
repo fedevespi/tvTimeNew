@@ -37,6 +37,25 @@ export interface TMDBMovieDetail {
   }
 }
 
+export interface TMDBSeasonSummary {
+  id: number
+  name: string
+  season_number: number
+  episode_count: number
+  air_date: string | null
+  poster_path: string | null
+}
+
+/** Episodio come lo restituisce `next_episode_to_air` / `last_episode_to_air`. */
+export interface TMDBEpisodeBrief {
+  id: number
+  name: string
+  season_number: number
+  episode_number: number
+  air_date: string | null
+  still_path: string | null
+}
+
 export interface TMDBTvDetail {
   id: number
   name: string
@@ -47,17 +66,23 @@ export interface TMDBTvDetail {
   vote_average: number
   genres: { id: number; name: string }[]
   number_of_seasons: number
-  seasons: {
-    id: number
-    name: string
-    season_number: number
-    episode_count: number
-    air_date: string | null
-    poster_path: string | null
-  }[]
+  seasons: TMDBSeasonSummary[]
+  next_episode_to_air?: TMDBEpisodeBrief | null
   credits: {
     cast: { id: number; name: string; character: string; profile_path: string | null }[]
   }
+}
+
+/**
+ * Sottoinsieme di `/tv/{id}` usato dalla Home (`tmdb.getTvSummary`): quanto basta
+ * a individuare il prossimo episodio e quello in arrivo, senza `credits`.
+ */
+export interface TMDBTvSummary {
+  id: number
+  name: string
+  poster_path: string | null
+  seasons: TMDBSeasonSummary[]
+  next_episode_to_air: TMDBEpisodeBrief | null
 }
 
 export interface TMDBSeasonDetail {
@@ -104,6 +129,19 @@ export interface NextEpisodeItem {
   episodeNumber: number
   episodeName: string
   stillPath: string | null
+}
+
+/** Prossimo episodio non ancora trasmesso di una serie seguita. */
+export interface UpcomingEpisodeItem extends NextEpisodeItem {
+  airDate: string
+}
+
+export interface HomeStats {
+  episodesWeek: number
+  episodesMonth: number
+  episodesTotal: number
+  showsInProgress: number
+  watchlistCount: number
 }
 
 export interface Review {

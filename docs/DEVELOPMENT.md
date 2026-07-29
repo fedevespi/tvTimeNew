@@ -1,6 +1,6 @@
 # tvTime — Sviluppo
 
-Ultimo aggiornamento: 2026-07-28 (Le mie liste: divisione Serie TV / Film con anteprime e liste complete dedicate)
+Ultimo aggiornamento: 2026-07-29 (Home: nuove sezioni "In arrivo", statistiche e watchlist + caricamento riscritto)
 
 ---
 
@@ -21,14 +21,18 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 
 ### Home
 - [x] Slider "Prossimi episodi" (`NextEpisodesSlider.tsx`, `Home.tsx`), route `/`: mostra fino a 10 serie TV "in corso" con il prossimo episodio non ancora visto e già uscito, ordinate per ultimo episodio visto
-- [x] Calcolo del prossimo episodio da vedere (`useNextEpisodes.ts`): scansiona le stagioni via TMDB e gli episodi già visti dell'utente; esclude le serie il cui prossimo episodio non è ancora uscito
-- [x] Cache in-memory delle risposte TMDB per sessione (`tmdb.ts`) e query Supabase scoped per singola serie (non cumulative) per evitare troncamenti e richieste duplicate
-- [x] Ordinamento e riduzione del carico su Home tramite funzione Postgres economica `get_last_watched_per_show` (`003_last_watched_per_show.sql`): elabora solo le serie necessarie a riempire lo slider (con margine per le escluse), non tutte le serie in corso — la pagina "Continua a guardare" elabora comunque tutte le serie
+- [x] Calcolo del prossimo episodio da vedere (`useNextEpisodes.ts`): individua la stagione che contiene l'episodio dal progresso già noto per stagione e scarica **solo quella**; esclude le serie il cui prossimo episodio non è ancora uscito (che finiscono in "In arrivo")
+- [x] Riga statistiche in cima alla Home (`HomeStatsRow.tsx`, `useHomeStats.ts`): episodi visti negli ultimi 7 e 30 giorni, serie in corso, titoli da vedere, da un'unica RPC `get_home_stats`; i due contatori delle liste sono link alle liste corrispondenti
+- [x] Sezione "In arrivo" (`UpcomingSlider.tsx`): prossimi episodi **non ancora trasmessi** delle serie seguite con data in forma breve ("Oggi", "Domani", "venerdì", "31 lug" — `lib/dates.ts`). Nessuna richiesta aggiuntiva: i dati vengono raccolti nella stessa passata di "Prossimi episodi", sia dagli episodi futuri incontrati sia da `next_episode_to_air` per le serie già in pari
+- [x] Sezione "Dalla tua watchlist" (`WatchlistSlider.tsx`): fino a 12 titoli "Da vedere" (serie e film) e pulsante dado "Cosa guardo stasera?" che apre un titolo casuale estratto da **tutta** la watchlist, non solo dai visibili
+- [x] Intestazione e carosello condivisi da tutte le sezioni (`HomeSection.tsx`), con skeleton animati durante il caricamento al posto della pagina vuota
+- [x] Cache TMDB in-memory per sessione **e persistente su localStorage** con TTL dinamico (`tmdb.ts`, `lib/localCache.ts`): una stagione conclusa è immutabile e dura 7 giorni, una in onda 30 minuti
+- [x] Ordinamento e riduzione del carico su Home tramite funzioni Postgres economiche `get_last_watched_per_show` (`003`), `get_watched_progress_per_show` (`004`) e `get_in_progress_shows_progress` (`005`): elabora solo le serie necessarie a riempire lo slider (con margine per le escluse), non tutte le serie in corso — la pagina "Continua a guardare" elabora comunque tutte le serie
 - [x] Card riutilizzabile `NextEpisodeCard.tsx`: immagine dell'episodio (fallback al poster della serie se mancante), nome serie + `SxEy`, pulsante rapido per segnare l'episodio come visto senza uscire dalla Home
+- [x] "Segna come visto" ottimistico: la card sparisce subito e l'aggiornamento dello stato serie avviene dopo, senza attesa
 - [x] Click sulla card apre `TvDetail.tsx` con la stagione del prossimo episodio già preselezionata (parametro `?season=`)
 - [x] Pagina dedicata "Continua a guardare" (`ContinueWatching.tsx`, route protetta `/continue-watching`) con tutte le serie in corso, stessa card in griglia
-- [x] Sezione nascosta del tutto se non ci sono serie in corso con un episodio da vedere
-- [ ] Prossime uscite (film/serie in arrivo) nella Home (v2)
+- [x] Ogni sezione è nascosta del tutto se non ha contenuto (nessuna serie in corso, nessun episodio in arrivo, watchlist vuota)
 
 ### Scopri
 - [x] Input di ricerca sempre visibile in cima alla pagina (`Discover.tsx`, ex `Search.tsx`), route `/discover`
@@ -140,8 +144,13 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] `useTitleDetails` — titolo e poster TMDB per un insieme di titoli, in un unico batch a concorrenza limitata (`useTitleDetails.ts`)
 - [x] `useTheme` — stato dark/light con persistenza localStorage
 - [x] `useLastWatchedOrder` — riordina i titoli per ultimo episodio visto, attivabile via flag (`useLastWatchedOrder.ts`); usato da `MyLists` e `ListDetail` per il solo stato "In corso"
+- [x] `useUserLists` accetta filtri opzionali `status` / `mediaType` applicati **lato server**: la Home chiede solo le serie "in corso" o solo la watchlist invece di scaricare l'intera libreria per filtrarla in memoria
+- [x] `useHomeStats` — contatori della Home dalla RPC `get_home_stats`, con ultimo valore noto da localStorage mentre revalida (`useHomeStats.ts`)
 - [x] `mapWithConcurrencyLimit` — helper di concorrenza condiviso (`lib/concurrency.ts`), estratto da `useNextEpisodes.ts` e riusato da `useTitleDetails`
 - [x] `fetchLastWatchedPerShow` / `compareByLastWatched` — accesso alla RPC `get_last_watched_per_show` e comparatore per data di ultima visione (`lib/lastWatched.ts`), estratti da `useNextEpisodes.ts` dove il comparatore era duplicato due volte inline
+- [x] `loadInProgressProgress` — serie in corso e loro progresso in una sola RPC, con ripiego sui due passaggi separati se la migrazione `005` non è stata eseguita (`lib/watchedProgress.ts`)
+- [x] `fetchWatchedProgress` / `seasonProgress` — progresso per stagione di serie note in una sola RPC, con ripiego per singola serie se la migrazione `004` non è stata eseguita (`lib/watchedProgress.ts`)
+- [x] `readCache` / `writeCache` — cache TTL su localStorage tolerante alla quota piena e allo storage disabilitato (`lib/localCache.ts`), usata da `tmdb.ts`, `useNextEpisodes.ts` e `useHomeStats.ts`
 
 ### Stato Automatico (Serie TV)
 - [x] Film: solo "Da vedere" o "Visto" (nessun "In corso")
@@ -167,6 +176,17 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 |---|---|
 | `001_initial.sql` | Creazione 4 tabelle + RLS policies |
 | `002_profile_trigger.sql` | Trigger auto-creazione profilo alla registrazione |
+| `003_last_watched_per_show.sql` | `get_last_watched_per_show`: data dell'ultimo episodio visto per serie |
+| `004_home_data.sql` | `get_watched_progress_per_show` (progresso per stagione), `get_home_stats` (contatori Home), indici su `watched_at` e su `(user_id, media_type, status)` |
+| `005_in_progress_progress.sql` | `get_in_progress_shows_progress`: serie in corso **e** loro progresso in un'unica chiamata (LEFT JOIN, così le serie senza episodi visti compaiono comunque) |
+
+> Le migrazioni vanno eseguite a mano nell'SQL Editor di Supabase. Se `004` o `005`
+> non sono state eseguite la Home funziona comunque: `loadInProgressProgress` e
+> `fetchWatchedProgress` rilevano l'errore della RPC e ricadono sui passaggi
+> separati / sulle query per singola serie, e la riga statistiche resta nascosta.
+> Vale la pena tenere questi ripieghi: senza di essi un errore della RPC verrebbe
+> letto come "nessun episodio visto" e la Home proporrebbe il primo episodio di
+> ogni serie.
 
 ---
 
@@ -177,6 +197,13 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - **Supabase**: email conferma disabilitata per sviluppo (da riabilitare in produzione)
 - **TMDB**: lingua italiana (`it-IT`) per tutte le chiamate API
 - **Performance "Le mie liste"**: prima ogni riga faceva la propria chiamata TMDB in `useEffect`, quindi una lista da 150 titoli generava 150 richieste parallele non coordinate. Ora la fetch è centralizzata in `useTitleDetails`, invocato dalla pagina con i soli elementi effettivamente visibili (per l'anteprima: 6 serie + 6 film in griglia, 4 + 4 in elenco), con concorrenza 4 e aggiornamenti di stato accorpati ogni 100ms per evitare un re-render per ogni risposta. Attenzione nel modificare l'accorpamento: l'updater passato a `setDetails` **non deve chiudere sulla mappa `pending` mutabile**, perché React lo invoca in fase di render, quando `pending` è già stata svuotata — va sempre fatto uno snapshot (`Array.from(pending)`) prima di `pending.clear()`. I dettagli già risolti restano in mappa al cambio di tab, quindi tornare su una lista visitata non ricarica nulla
+- **Performance Home**: il collo di bottiglia non era il numero di serie ma le richieste **in serie** per ognuna. Prima, per ogni serie in corso: 1 `getTvDetail` (con `credits`, inutili in Home) + 1 query Supabase + una scansione stagione per stagione con `await` dentro un `for`, quindi fino a 15 round-trip sequenziali per una serie con 15 stagioni quasi tutte viste. Ora:
+  1. una sola RPC `get_in_progress_shows_progress` restituisce insieme le serie in corso e quanti episodi sono visti in ciascuna loro stagione — prima erano due viaggi in fila, perché la seconda query aveva bisogno degli ID restituiti dalla prima;
+  2. la stagione da scaricare si deduce da quei conteggi (la prima con `watched_count < episode_count`), quindi **2 richieste TMDB per serie** — riepilogo + una stagione — invece di 1+N, con concorrenza 8;
+  3. le risposte TMDB sono anche persistite su localStorage, quindi al rientro in Home la maggior parte non viene nemmeno richiesta;
+  4. il risultato dell'ultima visita è salvato come snapshot e mostrato immediatamente, poi revalidato in background; al primo caricamento assoluto (nessuno snapshot) le card compaiono man mano, invece di attendere l'ultima serie con `return null`.
+
+  Due punti a cui fare attenzione toccando `useNextEpisodes.ts`: l'ordine dei candidati è già l'ordine finale (ordinati per ultima visione **prima** delle richieste TMDB), ed è ciò che consente di mostrare i risultati parziali senza riordinarli dopo — se si cambia criterio di ordinamento va rivisto anche il rendering progressivo. E se i conteggi indicano tutte le stagioni complete si ricontrolla comunque l'ultima, perché `episode_count` di TMDB non sempre coincide con gli episodi effettivamente elencati.
 - **Importazione ZIP/JSON**: Utilizza `jszip` per decifrare l'archivio ZIP senza server. I titoli vengono mappati su TMDB interrogando in primis gli ID esterni (`tvdb_id`, `imdb_id`) tramite l'endpoint `/3/find/{id}` e in caso negativo tramite ricerca testuale. In caso di titoli non trovati, viene aperto un modal per la risoluzione elemento per elemento con suggerimenti live TMDB ed opzione di eliminazione. L'operazione è del tutto **idempotente**: eseguire l'importazione 2 o più volte consecutive agisce in `upsert` senza mai duplicare record nel database.
 - **Build**: `npx tsc --noEmit` e `npx vite build` entrambi OK
 

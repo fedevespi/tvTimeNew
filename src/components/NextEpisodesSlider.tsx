@@ -1,36 +1,36 @@
-import { Link } from 'react-router-dom'
-import { useNextEpisodesToWatch } from '@/hooks/useNextEpisodes'
 import { NextEpisodeCard } from '@/components/NextEpisodeCard'
-import { ChevronRight } from 'lucide-react'
+import { HomeSection, SliderSkeleton } from '@/components/HomeSection'
+import type { NextEpisodeItem } from '@/types'
 
-const MAX_ITEMS = 10
-
-export function NextEpisodesSlider() {
-  const { items, loading, markWatched } = useNextEpisodesToWatch({ limit: MAX_ITEMS })
-
-  if (loading || items.length === 0) return null
-
-  const visible = items
+/**
+ * Sezione "Prossimi episodi". È presentazionale: i dati arrivano dalla Home, che
+ * con la stessa passata alimenta anche "In arrivo".
+ */
+export function NextEpisodesSlider({
+  items,
+  loading,
+  onMarkWatched,
+}: {
+  items: NextEpisodeItem[]
+  loading: boolean
+  onMarkWatched: (tmdbId: number, seasonNumber: number, episodeNumber: number) => void
+}) {
+  if (loading) {
+    return (
+      <HomeSection title="Prossimi episodi">
+        <SliderSkeleton count={3} width="w-40" aspect="video" />
+      </HomeSection>
+    )
+  }
+  if (items.length === 0) return null
 
   return (
-    <section className="mb-8">
-      <div className="flex items-center justify-between px-4 mb-3">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Prossimi episodi</h2>
-        <Link
-          to="/continue-watching"
-          className="flex items-center gap-1 text-accent text-sm font-medium hover:text-accent-light transition-colors"
-        >
-          Vedi tutte
-          <ChevronRight size={16} />
-        </Link>
-      </div>
-      <div className="flex overflow-x-auto gap-3 px-4 pb-2 scrollbar-hide">
-        {visible.map(item => (
-          <div key={`${item.tmdbId}-${item.seasonNumber}-${item.episodeNumber}`} className="flex-shrink-0 w-40">
-            <NextEpisodeCard item={item} onMarkWatched={markWatched} />
-          </div>
-        ))}
-      </div>
-    </section>
+    <HomeSection title="Prossimi episodi" linkTo="/continue-watching">
+      {items.map(item => (
+        <div key={`${item.tmdbId}-${item.seasonNumber}-${item.episodeNumber}`} className="flex-shrink-0 w-40">
+          <NextEpisodeCard item={item} onMarkWatched={onMarkWatched} />
+        </div>
+      ))}
+    </HomeSection>
   )
 }
