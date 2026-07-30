@@ -26,9 +26,12 @@ export function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900 px-4">
       <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white text-center mb-8">
-          tv<span className="text-accent">Time</span>
-        </h1>
+        <div className="flex flex-col items-center gap-3 mb-8">
+          <img src="/icon-180.png" alt="" className="w-16 h-16 rounded-2xl" />
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+            tv<span className="text-accent">Boss</span>
+          </h1>
+        </div>
         <form onSubmit={handleSubmit} className="bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur rounded-2xl p-6 space-y-4 border border-slate-200 dark:border-slate-700/50">
           <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Accedi</h2>
           {error && <p className="text-red-400 text-sm">{error}</p>}

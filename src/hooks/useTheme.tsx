@@ -9,13 +9,18 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | null>(null)
 
+const STORAGE_KEY = 'tvboss-theme'
+/** Chiave usata quando l'app si chiamava tvTime: letta una volta per non perdere la preferenza. */
+const LEGACY_STORAGE_KEY = 'tvtime-theme'
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    return (localStorage.getItem('tvtime-theme') as Theme) || 'dark'
+    const stored = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY)
+    return (stored as Theme) || 'dark'
   })
 
   useEffect(() => {
-    localStorage.setItem('tvtime-theme', theme)
+    localStorage.setItem(STORAGE_KEY, theme)
     if (theme === 'dark') {
       document.documentElement.classList.add('dark')
     } else {

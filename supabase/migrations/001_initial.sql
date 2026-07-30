@@ -1,5 +1,5 @@
-# tvTime Database Setup
-# Esegui questo script nell'SQL Editor di Supabase
+-- tvBoss Database Setup
+-- Esegui questo script nell'SQL Editor di Supabase
 
 -- 1. Tabella profili
 create table profiles (

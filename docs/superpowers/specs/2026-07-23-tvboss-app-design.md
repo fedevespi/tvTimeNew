@@ -1,4 +1,4 @@
-# tvTime — Design Spec
+# tvBoss — Design Spec
 
 **Data:** 2026-07-23
 **Stato:** Approvato per la fase di pianificazione implementativa

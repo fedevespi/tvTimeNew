@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { Film } from 'lucide-react'
 
 export function Info() {
   return (
@@ -9,10 +8,8 @@ export function Info() {
       <div className="space-y-6">
         <section className="bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur rounded-2xl p-5 border border-slate-200 dark:border-slate-700/50">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-accent/15 rounded-xl">
-              <Film size={20} className="text-accent" />
-            </div>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">tvTime</h2>
+            <img src="/icon-180.png" alt="" className="w-10 h-10 rounded-xl" />
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">tvBoss</h2>
           </div>
           <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
             Una web app per tracciare film e serie TV: cosa hai visto, cosa vuoi vedere,

@@ -1,4 +1,4 @@
-# tvTime — Design System & Linee Guida UI
+# tvBoss — Design System & Linee Guida UI
 
 Ultimo aggiornamento: 2026-07-24
 
@@ -6,7 +6,7 @@ Ultimo aggiornamento: 2026-07-24
 
 ## Panoramica Estetica
 
-`tvTime` utilizza un design moderno, scuro di default (con override chiaro tramite toggle), basato su effetti **glassmorphism** (`backdrop-blur`), bordi sottili e traslucidi, angoli fortemente arrotondati (`rounded-xl` / `rounded-2xl`) e l'accent color arancione TV Time (`#f97316` / `text-accent`).
+`tvBoss` utilizza un design moderno, scuro di default (con override chiaro tramite toggle), basato su effetti **glassmorphism** (`backdrop-blur`), bordi sottili e traslucidi, angoli fortemente arrotondati (`rounded-xl` / `rounded-2xl`) e l'accent color arancione del logo (`#f97316` / `text-accent`).
 
 Tutti i componenti visibili nell'applicazione devono rispettare rigorosamente questo linguaggio visivo.
 

@@ -40,7 +40,12 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900">
       <header className="bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700/50 px-4 py-2.5 flex items-center justify-between sticky top-0 z-30">
-        <Link to="/" className="text-lg font-bold text-slate-900 dark:text-white">tvTime</Link>
+        <Link to="/" className="flex items-center gap-2">
+          <img src="/icon-180.png" alt="" className="w-7 h-7 rounded-lg" />
+          <span className="text-lg font-bold text-slate-900 dark:text-white">
+            tv<span className="text-accent">Boss</span>
+          </span>
+        </Link>
         <div className="flex items-center gap-1">
           <Link
             to="/info"

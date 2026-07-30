@@ -1,4 +1,10 @@
-const PREFIX = 'tvtime:cache:'
+const PREFIX = 'tvboss:cache:'
+/**
+ * Prefisso usato quando l'app si chiamava tvTime. Non si legge né si scrive più,
+ * ma le voci rimaste vanno intercettate dalle purghe: altrimenti occuperebbero
+ * quota per sempre, senza che nulla le possa più sfrattare.
+ */
+const LEGACY_PREFIX = 'tvtime:cache:'
 
 interface CacheEntry<T> {
   value: T
@@ -24,7 +30,7 @@ function forEachCacheKey(store: Storage, fn: (key: string) => void) {
   const keys: string[] = []
   for (let i = 0; i < store.length; i++) {
     const key = store.key(i)
-    if (key?.startsWith(PREFIX)) keys.push(key)
+    if (key?.startsWith(PREFIX) || key?.startsWith(LEGACY_PREFIX)) keys.push(key)
   }
   // La rimozione altera gli indici: si raccolgono prima tutte le chiavi.
   for (const key of keys) fn(key)

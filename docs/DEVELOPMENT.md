@@ -1,6 +1,6 @@
-# tvTime — Sviluppo
+# tvBoss — Sviluppo
 
-Ultimo aggiornamento: 2026-07-29 (Home protetta da login; nuove sezioni "In arrivo", statistiche e watchlist + caricamento riscritto)
+Ultimo aggiornamento: 2026-07-30 (Rinominata l'app da tvTime a tvBoss; logo dell'app mostrato in header, login, registrazione e Info; piano PWA → APK in `PWA_APK.md`)
 
 ---
 
@@ -91,7 +91,7 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Protezione lato server (Row Level Security policies)
 
 ### UI / Layout
-- [x] Header sticky con brand "tvTime", link Info, Settings e login/logout (`Layout.tsx`)
+- [x] Header sticky con brand "tvBoss" (logo + wordmark), link Info, Settings e login/logout (`Layout.tsx`)
 - [x] Floating Bottom Navigation Bar con glassmorphism e sliding pill animation (Home / Scopri / Liste)
 - [x] La voce di nav resta attiva anche sulle sotto-rotte (`/lists/:status/:mediaType` evidenzia "Liste"), prima il match era solo esatto e la pill spariva
 - [x] Tema scuro e chiaro con toggle (`useTheme.tsx`, `Settings.tsx`)
@@ -195,8 +195,8 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 
 ## Note tecniche
 
-- **Node.js**: il progetto richiede Node >= 20 per il plugin PWA. Con Node 18 (attuale), `vite-plugin-pwa` è commentato in `vite.config.ts`
-- **PWA**: manifest e apple-touch-icon configurati in `index.html`, plugin PWA da abilitare con Node >= 20
+- **Node.js**: il progetto richiede Node >= 20 per il plugin PWA. Requisito ora soddisfatto (v20.19.1), quindi `vite-plugin-pwa` è commentato in `vite.config.ts` senza più un motivo che lo giustifichi
+- **PWA**: **non ancora funzionante**. `index.html` linka `/manifest.webmanifest`, ma il file non esiste (404) e mancano le icone 192/512 richieste per l'installabilità; l'apple-touch-icon invece è a posto. Piano completo per arrivare all'APK scaricabile in [`PWA_APK.md`](PWA_APK.md)
 - **Supabase**: email conferma disabilitata per sviluppo (da riabilitare in produzione)
 - **TMDB**: lingua italiana (`it-IT`) per tutte le chiamate API
 - **Performance "Le mie liste"**: prima ogni riga faceva la propria chiamata TMDB in `useEffect`, quindi una lista da 150 titoli generava 150 richieste parallele non coordinate. Ora la fetch è centralizzata in `useTitleDetails`, invocato dalla pagina con i soli elementi effettivamente visibili (per l'anteprima: 6 serie + 6 film in griglia, 4 + 4 in elenco), con concorrenza 4 e aggiornamenti di stato accorpati ogni 100ms per evitare un re-render per ogni risposta. Attenzione nel modificare l'accorpamento: l'updater passato a `setDetails` **non deve chiudere sulla mappa `pending` mutabile**, perché React lo invoca in fase di render, quando `pending` è già stata svuotata — va sempre fatto uno snapshot (`Array.from(pending)`) prima di `pending.clear()`. I dettagli già risolti restano in mappa al cambio di tab, quindi tornare su una lista visitata non ricarica nulla
@@ -221,7 +221,8 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Gestione errori TMDB (messaggio + retry, nessun crash)
 - [x] Toast di errore per fallimenti Supabase (voto/commento/stato)
 - [x] Placeholder poster per immagini mancanti
-- [ ] Abilitare PWA con Node >= 20
+- [ ] Abilitare PWA (Fase 1 di [`PWA_APK.md`](PWA_APK.md): manifest, service worker, icone 192/512, bottone "Installa app")
+- [ ] APK scaricabile da Impostazioni (Fasi 2-4 di [`PWA_APK.md`](PWA_APK.md))
 - [ ] Riabilitare email conferma per produzione
 - [x] Deploy su Vercel
 
