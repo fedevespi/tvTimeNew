@@ -1,6 +1,6 @@
 # tvBoss — Sviluppo
 
-Ultimo aggiornamento: 2026-07-30 (Rinominata l'app da tvTime a tvBoss; logo dell'app mostrato in header, login, registrazione e Info; piano PWA → APK in `PWA_APK.md`)
+Ultimo aggiornamento: 2026-07-30 (Rinominata l'app da tvTime a tvBoss con il logo in header/login/registrazione/Info; PWA installabile attiva — Fase 1 di `PWA_APK.md`, il cui obiettivo finale è l'APK scaricabile)
 
 ---
 
@@ -124,6 +124,7 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Info account (email utente)
 - [x] Toggle tema luce/scuro con persistenza localStorage
 - [x] Importazione liste tramite file ZIP o JSON di TV Time (`ImportZipCard.tsx`, `importer.ts`)
+- [x] Card "Installa app" (`InstallAppCard.tsx`, `useInstallPrompt.ts`): prompt nativo su Chromium, istruzioni manuali su iOS, nascosta se già installata o non supportata
 - [x] Link a pagina Informazioni
 - [x] Bottone logout
 - [x] Route protetta (`/settings`)
@@ -195,8 +196,9 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 
 ## Note tecniche
 
-- **Node.js**: il progetto richiede Node >= 20 per il plugin PWA. Requisito ora soddisfatto (v20.19.1), quindi `vite-plugin-pwa` è commentato in `vite.config.ts` senza più un motivo che lo giustifichi
-- **PWA**: **non ancora funzionante**. `index.html` linka `/manifest.webmanifest`, ma il file non esiste (404) e mancano le icone 192/512 richieste per l'installabilità; l'apple-touch-icon invece è a posto. Piano completo per arrivare all'APK scaricabile in [`PWA_APK.md`](PWA_APK.md)
+- **Node.js**: il progetto richiede Node >= 20 per il plugin PWA. Requisito soddisfatto (v20.19.1)
+- **PWA**: attiva (`vite-plugin-pwa` in `vite.config.ts`). Manifest e service worker sono **generati dal build**, non scritti a mano: `index.html` non deve contenere un `<link rel="manifest">`, perché il plugin inietta il proprio e quello a mano resterebbe duplicato. Il service worker **non gira in `vite dev`**: per provarlo serve `npm run build && npm run preview`. Cache a runtime solo per le immagini TMDB; Supabase è dichiarato `NetworkOnly` di proposito. Piano per arrivare all'APK scaricabile in [`PWA_APK.md`](PWA_APK.md)
+- **Icone**: tutte quelle in `public/` sono generate da `scripts/generate-icons.mjs` (`npm run icons`) a partire da `icon-source.png`. Modificarle a mano significa perderle al prossimo `npm run icons`: si cambia la sorgente e si rigenera
 - **Supabase**: email conferma disabilitata per sviluppo (da riabilitare in produzione)
 - **TMDB**: lingua italiana (`it-IT`) per tutte le chiamate API
 - **Performance "Le mie liste"**: prima ogni riga faceva la propria chiamata TMDB in `useEffect`, quindi una lista da 150 titoli generava 150 richieste parallele non coordinate. Ora la fetch è centralizzata in `useTitleDetails`, invocato dalla pagina con i soli elementi effettivamente visibili (per l'anteprima: 6 serie + 6 film in griglia, 4 + 4 in elenco), con concorrenza 4 e aggiornamenti di stato accorpati ogni 100ms per evitare un re-render per ogni risposta. Attenzione nel modificare l'accorpamento: l'updater passato a `setDetails` **non deve chiudere sulla mappa `pending` mutabile**, perché React lo invoca in fase di render, quando `pending` è già stata svuotata — va sempre fatto uno snapshot (`Array.from(pending)`) prima di `pending.clear()`. I dettagli già risolti restano in mappa al cambio di tab, quindi tornare su una lista visitata non ricarica nulla
@@ -221,7 +223,7 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Gestione errori TMDB (messaggio + retry, nessun crash)
 - [x] Toast di errore per fallimenti Supabase (voto/commento/stato)
 - [x] Placeholder poster per immagini mancanti
-- [ ] Abilitare PWA (Fase 1 di [`PWA_APK.md`](PWA_APK.md): manifest, service worker, icone 192/512, bottone "Installa app")
+- [x] Abilitare PWA (Fase 1 di [`PWA_APK.md`](PWA_APK.md): manifest, service worker, icone 192/512, bottone "Installa app"). Resta da confermare su dispositivo Android e sul deploy HTTPS
 - [ ] APK scaricabile da Impostazioni (Fasi 2-4 di [`PWA_APK.md`](PWA_APK.md))
 - [ ] Riabilitare email conferma per produzione
 - [x] Deploy su Vercel

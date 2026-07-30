@@ -2,6 +2,7 @@ import { useAuth } from '@/lib/auth'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '@/hooks/useTheme'
 import { ImportZipCard } from '@/components/ImportZipCard'
+import { InstallAppCard } from '@/components/InstallAppCard'
 import { Settings as SettingsIcon, User, LogOut, ChevronRight, Sun, Moon } from 'lucide-react'
 
 export function Settings() {
@@ -52,6 +53,8 @@ export function Settings() {
             </button>
           </div>
         </div>
+
+        <InstallAppCard />
 
         <ImportZipCard />
 

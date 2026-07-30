@@ -1,6 +1,6 @@
 # tvBoss — Da sito a app installabile (PWA → APK)
 
-Ultimo aggiornamento: 2026-07-30
+Ultimo aggiornamento: 2026-07-30 — **Fase 1 completata**, Fasi 2-4 da fare.
 
 **Obiettivo finale:** un bottone in Impostazioni che scarica l'APK di tvBoss, così
 che il sito si usi come un'app installata.
@@ -24,16 +24,17 @@ Da qui l'ordine: PWA installabile → dominio predisposto → APK firmato → bo
 
 ---
 
-## Stato attuale (verificato il 2026-07-30)
+## Stato attuale (aggiornato il 2026-07-30, a Fase 1 conclusa)
 
 | Cosa | Stato |
 |---|---|
-| `vite-plugin-pwa` | 0.20.5 installato, ma **commentato** in `vite.config.ts` |
-| `manifest.webmanifest` | `index.html:9` lo linka, **il file non esiste** → 404 |
+| `vite-plugin-pwa` | 0.20.5, **attivo** in `vite.config.ts` (manifest + Workbox) |
+| `manifest.webmanifest` | generato dal plugin e servito con `application/manifest+json`. Il vecchio 404 non c'è più |
+| Service worker | `dist/sw.js` generato, 16 voci in precache, `registerType: 'autoUpdate'` |
 | Node | v20.19.1 → il blocco "abilitare PWA con Node >= 20" **non esiste più** |
-| Icone | solo `favicon.png` 32×32 e `icon-180.png` 180×179. **Mancano 192 e 512**, obbligatorie per l'installabilità |
-| Sorgente logo | `icon.jpg` in root: in realtà un **PNG 754×751** (estensione sbagliata). Risoluzione sufficiente per generare tutto |
-| Resize immagini | nessuna libreria disponibile (`sharp`/`jimp` assenti) |
+| Icone | `favicon.png` 32, `icon-180.png` 180, `pwa-192x192`, `pwa-512x512`, `pwa-512x512-maskable`. Tutte generate da `npm run icons` |
+| Sorgente logo | `icon-source.png` in root, PNG 754×751 (era `icon.jpg`, estensione sbagliata) |
+| Resize immagini | `sharp` come devDependency + `scripts/generate-icons.mjs` |
 | `.well-known/` in `public/` | **viene copiato** in `dist/` da Vite (verificato con un probe) → nessun workaround per `assetlinks.json` |
 | Deploy | Vercel, nessun `vercel.json` |
 | Toolchain Android | `java` non installato → Bubblewrap in locale richiederebbe JDK 17 + Android SDK |
@@ -55,50 +56,53 @@ Da qui l'ordine: PWA installabile → dominio predisposto → APK firmato → bo
 
 ---
 
-## Fase 1 — PWA installabile
+## Fase 1 — PWA installabile ✅ (fatta)
 
 Nessun APK, nessuna firma, nessun sideload. Su Android compare il prompt "Installa
 app" nativo di Chrome; su iPhone è l'unica strada possibile.
 
-- [ ] Generare `pwa-192x192.png` e `pwa-512x512.png` dalla sorgente. Attenzione:
-      la sorgente è 754×**751**, non è quadrata — va portata a quadrato con
-      padding, non stirata, altrimenti le icone risultano deformate.
-- [ ] Generare anche una icona **maskable** 512. Android ritaglia l'icona nella
-      forma del launcher (cerchio, goccia, squircle secondo il dispositivo): il
-      nostro logo è già un quadrato arrotondato con sfondo scuro, quindi va
-      rimpicciolito dentro la tela lasciando ~20% di margine, o gli angoli e la
-      pellicola in basso a destra vengono tagliati.
-- [ ] Come generarle: `npm i -D sharp` più un piccolo script, oppure l'image
-      generator di PWABuilder. Oggi non c'è nessuno dei due.
-- [ ] Rinominare `icon.jpg` → `icon-source.png`: è un PNG, l'estensione mente.
-- [ ] Scommentare e configurare `VitePWA` in `vite.config.ts`: `name` e
-      `short_name` `tvBoss`, `start_url: '/'`, `scope: '/'`,
-      `display: 'standalone'`, `lang: 'it'`, `theme_color` e `background_color`
-      `#0f172a` (già il valore del meta `theme-color` in `index.html`), più le tre
-      icone.
-- [ ] **Rimuovere `<link rel="manifest">` da `index.html`.** Il plugin inietta il
-      proprio tag durante il build: quello scritto a mano resterebbe duplicato — ed
-      è esattamente la riga che oggi punta a un 404.
-- [ ] Workbox, attenti a cosa si mette in cache. Precache dei soli asset buildati
-      (hashati, quindi sicuri), `navigateFallback: 'index.html'` per il routing
-      SPA, `cleanupOutdatedCaches: true`. **Non** mettere in runtime cache le
-      chiamate a Supabase: un token o una lista serviti da una cache stantia sono
-      un bug di correttezza, non un'ottimizzazione. Le immagini TMDB invece sono
-      candidate legittime (CacheFirst con scadenza).
-- [ ] Tenere presente che si aggiunge un **secondo livello di cache**:
-      `lib/localCache.ts` già persiste risposte TMDB su localStorage. E con
-      `registerType: 'autoUpdate'` il service worker continua a servire la shell
-      vecchia fino al reload successivo — è la spiegazione da ricordare quando un
-      aggiornamento "non si vede".
-- [ ] Bottone "Installa app" in Impostazioni: intercettare `beforeinstallprompt`,
-      conservare l'evento, mostrare il bottone solo se disponibile, chiamare
-      `prompt()` al click. Nasconderlo se l'app è già installata
-      (`matchMedia('(display-mode: standalone)')` oppure evento `appinstalled`).
-- [ ] iOS **non** emette `beforeinstallprompt`: lì al posto del bottone servono le
-      istruzioni ("Condividi → Aggiungi alla schermata Home"), altrimenti su
-      iPhone la card resta muta senza spiegazione.
-- [ ] Verificare con Chrome DevTools → Application → Manifest e con Lighthouse.
-      L'installabilità richiede HTTPS (localhost è esentato).
+- [x] Icone generate da `scripts/generate-icons.mjs` (`npm run icons`), che è
+      proprietario di **tutte** le icone di `public/`: se il logo cambia si
+      rigenera tutto con un comando invece di rifarle a mano.
+- [x] Icona **maskable** dedicata. Android ritaglia nella forma del launcher, così
+      il badge è rimpicciolito al 62,5% su fondo pieno `#212832` — lo stesso colore
+      del badge, verificato pixel per pixel, quindi il ritaglio non lascia alcun
+      contorno visibile.
+- [x] `icon.jpg` → `icon-source.png`: era un PNG, l'estensione mentiva.
+- [x] `VitePWA` attivo e configurato in `vite.config.ts`: `tvBoss`,
+      `start_url: '/'`, `scope: '/'`, `display: 'standalone'`, `lang: 'it'`,
+      `theme_color`/`background_color` `#0f172a`, le tre icone.
+- [x] Rimosso `<link rel="manifest">` da `index.html`. Verificato sul build che il
+      plugin ne inietta **uno solo**: quello a mano sarebbe stato un duplicato, ed
+      era la riga che puntava al 404.
+- [x] Workbox: precache dei soli asset buildati (16 voci),
+      `navigateFallback: '/index.html'` per il routing SPA,
+      `cleanupOutdatedCaches: true`, e `navigateFallbackDenylist` su
+      `/.well-known/` già predisposto per la Fase 2. Runtime cache **solo** per
+      `image.tmdb.org` (CacheFirst, 300 voci / 30 giorni). Supabase è dichiarato
+      esplicitamente `NetworkOnly`: non perché serva oggi, ma perché rende
+      difficile che una regola aggiunta in futuro se lo mangi per sbaglio — liste
+      o token serviti da cache stantia sono un bug di correttezza.
+- [x] Bottone "Installa app" in Impostazioni (`InstallAppCard.tsx` +
+      `useInstallPrompt.ts`): intercetta `beforeinstallprompt` con
+      `preventDefault()`, si nasconde su `appinstalled` o
+      `display-mode: standalone`, e non compare affatto dove l'installazione non è
+      supportata, per non promettere una funzione inesistente.
+- [x] Ramo iOS con le istruzioni "Condividi → Aggiungi alla schermata Home": lì
+      `beforeinstallprompt` non viene mai emesso e la card sarebbe rimasta muta.
+- [x] Verificato in locale con `npm run build && npm run preview`: manifest servito
+      come `application/manifest+json`, `sw.js` e `registerSW.js` a 200, regole
+      `CacheFirst` e `NetworkOnly` presenti nel service worker generato.
+
+**Cosa resta, e richiede un dispositivo reale:** il prompt "Installa app" su Chrome
+Android, la resa della maskable nel launcher, e Lighthouse → Installability sul
+deploy Vercel. L'installabilità richiede HTTPS e localhost è esentato, quindi la
+preview locale non la dimostra.
+
+> **Nota sul modello di aggiornamento.** Da adesso ci sono due livelli di cache:
+> `lib/localCache.ts` su localStorage e il service worker. Con `autoUpdate` il SW
+> continua a servire la shell precedente fino al reload successivo — è la
+> spiegazione da ricordare la prima volta che un deploy "non si vede".
 
 ---
 
