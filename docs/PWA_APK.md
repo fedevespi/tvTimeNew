@@ -1,10 +1,13 @@
 # tvBoss — Da sito a app installabile (PWA → APK)
 
-Ultimo aggiornamento: 2026-07-31 — **L'APK funziona su dispositivo reale**, senza
-barra degli indirizzi: il legame sito-app è verificato da Google e confermato in
-pratica. Keystore al sicuro. **Resta un solo passo:** pubblicare `tvBoss.apk` come
-asset di una release GitHub e compilare `APK_RELEASE`, che accende la card di
-download in Impostazioni.
+Ultimo aggiornamento: 2026-07-31 — ✅ **Piano completato.** L'obiettivo era «un
+bottone in Impostazioni che scarica l'APK di tvBoss»: la card è live su
+`https://tv-time-new.vercel.app`, serve `tvBoss.apk` dalla release `v1.0.0`, e
+l'app installata apre il sito a schermo pieno senza barra degli indirizzi.
+
+Quel che resta scritto qui sotto non è più una lista di cose da fare, ma il
+motivo delle scelte — utile la prossima volta che si tocca l'APK, che sarà solo
+cambiando nome, icona, dominio o versione (vedi il modello di aggiornamento).
 
 **Obiettivo finale:** un bottone in Impostazioni che scarica l'APK di tvBoss, così
 che il sito si usi come un'app installata.
@@ -255,18 +258,32 @@ volta sola.
         la pagina di errore di Chrome: la shell arriva dal precache. Le liste no,
         ed è voluto — Supabase è `NetworkOnly`;
       - icona maskable corretta nel launcher, senza contorni dal ritaglio.
-- [ ] Pubblicare `tvBoss.apk` come asset di una release GitHub. `gh` non è
-      installato, quindi si fa dall'interfaccia web. **È l'ultimo passo**: poi si
-      compila `APK_RELEASE` e la card di download si accende.
+- [x] `tvBoss.apk` pubblicato come asset della release **`v1.0.0`** (fatto
+      dall'interfaccia web: `gh` non è installato). Verificato che non sia draft né
+      prerelease, che l'asset risulti `uploaded`, che il link risponda 302 → 200 con
+      `Content-Disposition: attachment` e `Content-Type:
+      application/vnd.android.package-archive`, e che l'**SHA-256 del file
+      scaricato coincida** con quello dell'APK locale di cui era stato letto
+      package name e firma: gli utenti ricevono lo stesso file verificato.
 
 ---
 
-## Fase 4 — Il bottone di download ✅ (fatta, dormiente)
+## Fase 4 — Il bottone di download ✅ (fatta e attiva)
 
-Il codice c'è tutto. **Per accenderlo basta un'unica modifica:** compilare
-`APK_RELEASE` in `src/lib/apk.ts` con `version`, `url` dell'asset GitHub e
-`sizeBytes`. Finché resta `null` la card non compare — invece di offrire un link
-rotto per i mesi in cui l'APK non esiste.
+`APK_RELEASE` in `src/lib/apk.ts` è compilato con la release `v1.0.0`, e la card
+mostra **`tvBoss.apk · v1.0.0.0 · 1,9 MB`**. Due scelte nei valori che a prima
+vista sembrano sbagliate:
+
+- **`version` è `1.0.0.0`, non `1.0.0`** come il tag della release: è il
+  `versionName` letto dall'APK, cioè la stringa che Android mostra nelle info
+  dell'app. È quella con cui un utente capisce se ha già l'ultima versione.
+- **L'URL è fissato al tag**, non `/releases/latest/download/`. Quello seguirebbe
+  da sé le release future, ma `version` e `sizeBytes` restano scritti nel codice:
+  servirebbe un file diverso da quello annunciato. Fissato al tag, i tre campi
+  descrivono sempre lo stesso file — al massimo vecchio, ma non falso.
+
+Il meccanismo del `null` resta e va tenuto: se un giorno si ritirasse la release,
+riportare `APK_RELEASE` a `null` fa sparire la card invece di offrire un 404.
 
 - [x] Hosting scelto: GitHub Releases (decisione 3).
 - [x] `DownloadApkCard.tsx` con nome file, versione e peso. Il nome file è
@@ -291,13 +308,19 @@ rotto per i mesi in cui l'APK non esiste.
       Per lo stesso motivo la card **non** usa l'attributo `download`, che i
       browser ignorano cross-origin.
 
-### Una cosa da decidere quando l'APK esisterà davvero
+### Una cosa da guardare ora che l'APK esiste
 
-Su Chrome Android le due card possono comparire insieme: "Installa app" (PWA, un
-tap) e "App per Android" (APK, con gli avvisi di sideload). Oggi non succede,
-perché `APK_RELEASE` è `null`. Restano entrambe di proposito — l'utente vede le
-due strade e sceglie — ma se sullo schermo risultasse confuso, il posto dove
-intervenire è l'ordine o la visibilità delle card in `Settings.tsx`.
+Su Chrome Android le due card possono comparire **insieme**: "Installa app" (PWA,
+un tap) e "App per Android" (APK, con gli avvisi di sideload). Da quando
+`APK_RELEASE` è compilato succede per davvero, a chi non ha ancora installato
+nulla.
+
+Restano entrambe di proposito — l'utente vede le due strade e sceglie, e la PWA
+è la via a minor attrito per chi si spaventa davanti agli avvisi di sideload. Ma
+è una convivenza da guardare su uno schermo vero: se risulta confusa, il posto
+dove intervenire è l'ordine o la visibilità delle card in `Settings.tsx`, non il
+contenuto delle card. Chi ha già l'APK non vede quella di download, perché
+`getInstalledRelatedApps()` riconosce il package.
 
 ---
 

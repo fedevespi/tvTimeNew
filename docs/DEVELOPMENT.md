@@ -1,6 +1,6 @@
 # tvBoss — Sviluppo
 
-Ultimo aggiornamento: 2026-07-31 (**APK Android generato, firmato e autorizzato**: package `com.fedevespi.tvboss`, fingerprint in `assetlinks.json` e legame verificato dall'API di Google — Fasi 2, 3 e 4 di `PWA_APK.md`. La PWA è anche **finalmente in produzione**: era rimasta sul branch `tvboss-pwa` mentre Vercel pubblica `master`. Resta da pubblicare la release GitHub e compilare `APK_RELEASE`, che accende la card di download)
+Ultimo aggiornamento: 2026-07-31 (**APK Android completato e scaricabile da Impostazioni** — piano di `PWA_APK.md` chiuso: package `com.fedevespi.tvboss`, legame verificato dall'API Digital Asset Links di Google, APK provato su dispositivo reale senza barra degli indirizzi, release `v1.0.0` su GitHub e card di download attiva. La PWA è anche **finalmente in produzione**: era rimasta sul branch `tvboss-pwa` mentre Vercel pubblica `master`)
 
 ---
 
@@ -230,7 +230,7 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Predisporre il dominio per la TWA e scrivere la card di download (Fasi 2 e 4 di [`PWA_APK.md`](PWA_APK.md))
 - [x] **PWA in produzione** su `https://tv-time-new.vercel.app`: il lavoro stava su `tvboss-pwa` mentre Vercel pubblica `master`, quindi il sito live era fermo a prima della rinomina in tvBoss. Risolto col merge; manifest, service worker, icone e `assetlinks.json` verificati a 200 live
 - [x] **APK generato, firmato e funzionante su dispositivo reale** (Fase 3): package `com.fedevespi.tvboss`, `versionName` 1.0.0.0, fingerprint in `assetlinks.json` e legame **verificato dall'API Digital Asset Links di Google**. Provato sul telefono: nessuna barra degli indirizzi, sessione Supabase che sopravvive alla chiusura, card "Installa app" correttamente assente dentro la TWA, degrado pulito offline. Il pacchetto PWABuilder (keystore incluso) è escluso da git
-- [ ] APK scaricabile da Impostazioni: resta da pubblicare `tvBoss.apk` come asset di una release GitHub e compilare `APK_RELEASE` in `src/lib/apk.ts`, che accende la card
+- [x] **APK scaricabile da Impostazioni** (Fase 4, piano completato): `tvBoss.apk` pubblicato nella release `v1.0.0` su GitHub e `APK_RELEASE` compilato. La card mostra `tvBoss.apk · v1.0.0.0 · 1,9 MB` e compare solo su Android, fuori da standalone/TWA, a chi non ha già l'app
 - [ ] Riabilitare email conferma per produzione
 - [x] Deploy su Vercel
 
