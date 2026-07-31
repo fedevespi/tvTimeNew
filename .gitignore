@@ -35,3 +35,21 @@ dist-ssr
 
 # Supabase
 supabase/.temp
+
+# Pacchetto Android generato da PWABuilder.
+#
+# Non e' solo questione di peso: la cartella contiene `signing.keystore` e le sue
+# password. Chi le ottiene puo' firmare aggiornamenti a nome di tvBoss, che
+# Android installerebbe sopra l'app degli utenti senza battere ciglio. Il
+# keystore va in un password manager, e da nessun'altra parte: perderlo rende gli
+# APK gia' installati non piu' aggiornabili, farlo trapelare e' peggio.
+#
+# APK e AAB restano fuori per un motivo diverso: sono ~2 MB a testa e
+# cambierebbero a ogni rebuild. Vanno pubblicati come asset di una release
+# GitHub (vedi APK_RELEASE in src/lib/apk.ts).
+tvBoss - Google Play package/
+*.keystore
+*.jks
+signing-key-info.txt
+*.apk
+*.aab

@@ -6,7 +6,9 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.fedevespi.tvboss",
-      "sha256_cert_fingerprints": []
+      "sha256_cert_fingerprints": [
+        "1A:6E:DA:4D:73:E7:A1:5F:D7:DC:12:A3:76:55:10:82:69:B3:6F:3F:B3:EC:1D:ED:48:7A:85:9A:6E:42:5F:1B"
+      ]
     }
   }
 ]
