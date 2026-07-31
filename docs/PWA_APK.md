@@ -308,19 +308,36 @@ riportare `APK_RELEASE` a `null` fa sparire la card invece di offrire un 404.
       Per lo stesso motivo la card **non** usa l'attributo `download`, che i
       browser ignorano cross-origin.
 
-### Una cosa da guardare ora che l'APK esiste
+### Su Android si offre solo l'APK (deciso il 2026-07-31)
 
-Su Chrome Android le due card possono comparire **insieme**: "Installa app" (PWA,
-un tap) e "App per Android" (APK, con gli avvisi di sideload). Da quando
-`APK_RELEASE` è compilato succede per davvero, a chi non ha ancora installato
-nulla.
+Per un attimo le due card comparivano insieme su Chrome Android — "Installa app"
+(PWA) e "App per Android" (APK) — ed era confuso: due inviti a installare la
+stessa app sulla stessa schermata. Ora su Android resta **solo l'APK**, che è
+anche il risultato migliore: icona nel launcher, nessuna barra degli indirizzi.
 
-Restano entrambe di proposito — l'utente vede le due strade e sceglie, e la PWA
-è la via a minor attrito per chi si spaventa davanti agli avvisi di sideload. Ma
-è una convivenza da guardare su uno schermo vero: se risulta confusa, il posto
-dove intervenire è l'ordine o la visibilità delle card in `Settings.tsx`, non il
-contenuto delle card. Chi ha già l'APK non vede quella di download, perché
-`getInstalledRelatedApps()` riconosce il package.
+La soppressione sta in `useInstallPrompt`, non in `Settings.tsx`:
+
+```ts
+const supersededByApk = APK_RELEASE !== null && isAndroid()
+```
+
+Lì perché è l'hook che *decide se proporre l'installazione*, quindi la regola vale
+per qualunque punto della UI la consulti, oggi e domani. Messa nella pagina
+sarebbe stata una condizione da ricordarsi di replicare.
+
+Tre conseguenze volute:
+
+- **iOS e desktop non cambiano.** L'APK non li riguarda, e lì la card
+  d'installazione è l'unica strada — su iPhone in particolare è la sola possibile.
+- **Non è una porta chiusa.** Chrome mantiene il proprio "Installa app" nel menu,
+  quindi chi preferisce la PWA la ottiene comunque: abbiamo smesso di
+  pubblicizzarla dove esiste un'alternativa migliore, non di permetterla.
+- **Su Android, a chi ha già l'app, non compare nulla** — la card di download si
+  nasconde via `getInstalledRelatedApps()` e quella d'installazione è soppressa. È
+  corretto: chi ha l'app non ha niente da installare.
+
+Il legame va tenuto presente se un giorno `APK_RELEASE` tornasse `null`: la card
+d'installazione ricomparirebbe da sé su Android, che è il comportamento giusto.
 
 ---
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { isIOS, isStandalone } from '@/lib/platform'
+import { APK_RELEASE } from '@/lib/apk'
+import { isAndroid, isIOS, isStandalone } from '@/lib/platform'
 
 /**
  * `beforeinstallprompt` non è nei tipi standard del DOM: è una specifica solo
@@ -49,11 +50,25 @@ export function useInstallPrompt() {
     return outcome === 'accepted'
   }, [promptEvent])
 
+  /**
+   * Su Android, dove c'è un APK da offrire, la PWA non si propone: due inviti a
+   * installare la stessa app sulla stessa schermata confondono, e la TWA è il
+   * risultato migliore — icona nel launcher e nessuna barra degli indirizzi.
+   *
+   * Non è una porta chiusa: Chrome mantiene il proprio "Installa app" nel menu,
+   * quindi chi preferisce la PWA la ottiene comunque. Qui smettiamo solo di
+   * pubblicizzarla, dove esiste un'alternativa migliore.
+   *
+   * iOS e desktop non sono toccati: l'APK non li riguarda, e lì questa card è
+   * l'unica strada.
+   */
+  const supersededByApk = APK_RELEASE !== null && isAndroid()
+
   return {
     /** Già installata: non c'è niente da proporre. */
     installed,
     /** Prompt nativo disponibile: un bottone può installare davvero. */
-    canInstall: !installed && promptEvent !== null,
+    canInstall: !installed && !supersededByApk && promptEvent !== null,
     /** Su iOS il prompt non esiste: l'unica strada sono le istruzioni manuali. */
     needsManualInstructions: !installed && isIOS(),
     install,
