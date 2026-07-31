@@ -1,6 +1,6 @@
 # tvBoss — Sviluppo
 
-Ultimo aggiornamento: 2026-07-31 (Predisposto l'APK Android: `assetlinks.json` col package `com.fedevespi.tvboss`, script `npm run assetlinks`, e card di download in Impostazioni già scritta ma dormiente finché non esiste una release — Fasi 2 e 4 di `PWA_APK.md`. Inoltre la PWA è **finalmente in produzione**: era rimasta sul branch `tvboss-pwa` mentre Vercel pubblica `master`. Resta la Fase 3, che si fa su PWABuilder)
+Ultimo aggiornamento: 2026-07-31 (**APK Android generato, firmato e autorizzato**: package `com.fedevespi.tvboss`, fingerprint in `assetlinks.json` e legame verificato dall'API di Google — Fasi 2, 3 e 4 di `PWA_APK.md`. La PWA è anche **finalmente in produzione**: era rimasta sul branch `tvboss-pwa` mentre Vercel pubblica `master`. Resta da pubblicare la release GitHub e compilare `APK_RELEASE`, che accende la card di download)
 
 ---
 
@@ -229,7 +229,8 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Abilitare PWA (Fase 1 di [`PWA_APK.md`](PWA_APK.md): manifest, service worker, icone 192/512, bottone "Installa app"). Verificata live sul deploy HTTPS; resta da confermare su un dispositivo Android reale (prompt di installazione, resa della maskable nel launcher, Lighthouse → Installability)
 - [x] Predisporre il dominio per la TWA e scrivere la card di download (Fasi 2 e 4 di [`PWA_APK.md`](PWA_APK.md))
 - [x] **PWA in produzione** su `https://tv-time-new.vercel.app`: il lavoro stava su `tvboss-pwa` mentre Vercel pubblica `master`, quindi il sito live era fermo a prima della rinomina in tvBoss. Risolto col merge; manifest, service worker, icone e `assetlinks.json` verificati a 200 live
-- [ ] APK scaricabile da Impostazioni: resta la Fase 3 (generare e firmare l'APK su PWABuilder, incollare la fingerprint con `npm run assetlinks`, pubblicare la release e compilare `APK_RELEASE`)
+- [x] **APK generato, firmato e autorizzato** (Fase 3): package `com.fedevespi.tvboss`, `versionName` 1.0.0.0, fingerprint in `assetlinks.json` e legame **verificato dall'API Digital Asset Links di Google**. Il pacchetto PWABuilder (keystore incluso) è escluso da git
+- [ ] APK scaricabile da Impostazioni: resta da pubblicare `tvBoss.apk` come asset di una release GitHub e compilare `APK_RELEASE` in `src/lib/apk.ts`, che accende la card
 - [ ] Riabilitare email conferma per produzione
 - [x] Deploy su Vercel
 

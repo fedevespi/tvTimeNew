@@ -1,9 +1,11 @@
 # tvBoss — Da sito a app installabile (PWA → APK)
 
-Ultimo aggiornamento: 2026-07-31 — **Fasi 1, 2 e 4 fatte, e la PWA è in
-produzione** su `https://tv-time-new.vercel.app` (verificato live). Resta la
-**Fase 3**, che non si fa da qui: generare l'APK su PWABuilder e incollare la
-fingerprint. Finché non esiste una release, la card di download non compare.
+Ultimo aggiornamento: 2026-07-31 — **APK generato, firmato e autorizzato.** La PWA
+è in produzione su `https://tv-time-new.vercel.app` e l'API di Google verifica il
+legame col package `com.fedevespi.tvboss`. Restano tre cose, tutte fuori dal
+codice: mettere il **keystore** al sicuro, provare l'APK su un telefono, e
+pubblicarlo come release GitHub — poi si compila `APK_RELEASE` e la card di
+download si accende.
 
 **Obiettivo finale:** un bottone in Impostazioni che scarica l'APK di tvBoss, così
 che il sito si usi come un'app installata.
@@ -192,7 +194,7 @@ Ricontrollato con `curl` dopo il deploy — tutto su
 | `/manifest.webmanifest` | 200 `application/manifest+json`, con `related_applications` e `prefer_related_applications: false` |
 | `/sw.js`, `/registerSW.js` | 200 `application/javascript` |
 | `/pwa-192x192`, `/pwa-512x512`, `/pwa-512x512-maskable`, `/icon-180` | 200 `image/png` |
-| `/.well-known/assetlinks.json` | 200 `application/json`, package `com.fedevespi.tvboss`, fingerprint ancora vuote |
+| `/.well-known/assetlinks.json` | 200 `application/json`, package `com.fedevespi.tvboss` (fingerprint aggiunta poi, nella Fase 3) |
 
 Il `; charset=utf-8` che Vercel aggiunge al content-type di `assetlinks.json` va
 bene: la verifica di Google guarda il tipo `application/json`, non il parametro.
@@ -205,28 +207,48 @@ localhost.
 
 ---
 
-## Fase 3 — Generare e firmare l'APK ⬅️ **il passo che resta**
+## Fase 3 — Generare e firmare l'APK — quasi fatta (2026-07-31)
 
-Non si può fare da riga di comando qui: `java` non è installato e Bubblewrap in
-locale richiederebbe JDK 17 più l'Android SDK. Si fa dal browser, una volta.
+Non si è fatta da riga di comando: `java` non è installato e Bubblewrap in locale
+richiederebbe JDK 17 più l'Android SDK. Fatta da browser con PWABuilder, una
+volta sola.
 
 - [x] PWA in produzione: prerequisito soddisfatto (sezione qui sopra).
-- [ ] PWABuilder.com → `https://tv-time-new.vercel.app` → **Android** → *Generate*. I campi da
-      controllare: Package ID **`com.fedevespi.tvboss`**, versione `1.0.0` /
-      versionCode `1`, display mode `standalone`, Signing key **New** (è la prima
-      volta: sarà PWABuilder a generare il keystore).
-- [ ] Nello zip che restituisce: l'APK firmato (sideload), l'AAB (Play Store),
-      `signing.keystore` e `assetlinks.json` già compilato.
-- [ ] Salvare **keystore, password e alias** in un password manager, fuori dal
-      repo. Perso il keystore, gli APK già installati non sono più aggiornabili.
-- [ ] `npm run assetlinks -- <fingerprint-SHA-256>`, poi commit e deploy. In
-      quest'ordine: la verifica legge il file dal sito live, quindi deve esserci
-      già quando l'APK viene installato.
-- [ ] Verificare sul tester Digital Asset Links di Google.
+- [x] APK e AAB generati con PWABuilder, Package ID `com.fedevespi.tvboss`,
+      `versionName` **1.0.0.0** (il default di PWABuilder), APK di 1.900.273 byte.
+- [x] **I tre package combaciano**, che è la cosa da verificare perché un
+      disallineamento qui è precisamente ciò che lascia la barra degli indirizzi
+      in cima all'app. Controllati uno per uno: `src/lib/apk.ts` e il manifest;
+      `assetlinks.json`; e l'APK stesso, letto dal suo `AndroidManifest.xml`
+      binario — che dichiara anche l'origine `https://tv-time-new.vercel.app`
+      nelle risorse, i metadati `android.support.customtabs.trusted.*` (è una TWA
+      vera, non una WebView) e la firma in `META-INF/TVBOSS.RSA`.
+- [x] `npm run assetlinks -- 1A:6E:…:1B`, e il file risultante confrontato campo
+      per campo con quello prodotto da PWABuilder: identici a meno di
+      formattazione. Commit `c5d3bc6`, deployato.
+- [x] **Verificato all'origine**, non col form web: interrogata direttamente
+      l'API che consulta Android,
+      `https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://tv-time-new.vercel.app&relation=delegate_permission/common.handle_all_urls`.
+      Restituisce uno statement con `packageName: com.fedevespi.tvboss` e la
+      nostra `sha256Fingerprint`. **Il legame è verificato da Google.** Utile
+      saperlo: `maxAge` è ~3600 s, quindi una fingerprint corretta dopo un errore
+      può richiedere fino a un'ora per propagarsi.
+- [x] Repository `fedevespi/tvTimeNew` confermato **pubblico** via API GitHub: gli
+      asset delle release sono scaricabili senza autenticazione, quindi la
+      decisione 3 regge. Su un repo privato il link di download sarebbe stato
+      inutilizzabile per gli utenti.
+- [x] Pacchetto tenuto fuori dal repo via `.gitignore` (cartella, `*.keystore`,
+      `*.jks`, `signing-key-info.txt`, `*.apk`, `*.aab`).
+- [ ] ⚠️ **Salvare `signing.keystore` + alias e password in un password manager**,
+      fuori dal repo. Non è igiene, è l'unica copia: perso il keystore gli APK già
+      installati non sono più aggiornabili; trapelato, qualcuno può firmare
+      aggiornamenti a nome di tvBoss che Android installerebbe sopra l'app degli
+      utenti.
 - [ ] Provare su un dispositivo reale. Se in cima all'app compare la barra degli
       indirizzi di Chrome, `assetlinks.json` non è stato verificato: è il sintomo
       preciso da cercare, non un problema di grafica.
-- [ ] Pubblicare l'APK come asset di una release GitHub (decisione 3).
+- [ ] Pubblicare `tvBoss.apk` come asset di una release GitHub. `gh` non è
+      installato, quindi si fa dall'interfaccia web.
 
 ---
 
