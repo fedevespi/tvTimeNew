@@ -312,6 +312,15 @@ riportare `APK_RELEASE` a `null` fa sparire la card invece di offrire un 404.
       già l'app installata — quest'ultimo tramite `getInstalledRelatedApps()`.
       Dove quell'API manca non si sa nulla e **la card si mostra**: proporre un
       download superfluo è meno grave che nascondere l'unico modo di installare.
+- [ ] ⚠️ **Il ramo `getInstalledRelatedApps()` non è mai stato confermato su un
+      dispositivo.** Nell'unica prova fatta l'app era stata disinstallata, quindi
+      la card compariva a ragione e quel codice non è entrato in gioco. Il dubbio
+      da sciogliere: con `platform: 'play'` Chrome potrebbe cercare solo app
+      installate *dal Play Store*, e la nostra è sideloaded — in quel caso la
+      funzione non fa nulla di utile. Come verificare: con l'APK installato,
+      aprire il sito in Chrome e guardare se la card è assente. Se compare, il
+      ramo va rimosso o sostituito, non lasciato lì a fingere. Nessun danno
+      intanto: al peggio si propone un download a chi ha già l'app.
 - [x] Rilevamento piattaforma spostato in `src/lib/platform.ts`, condiviso con
       `useInstallPrompt`: erano gli stessi controlli in due posti, e in due posti
       divergono. Aggiunto `isTwa()` (referrer `android-app://`), in OR col
