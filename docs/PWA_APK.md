@@ -1,6 +1,8 @@
 # tvBoss — Da sito a app installabile (PWA → APK)
 
-Ultimo aggiornamento: 2026-07-30 — **Fase 1 completata**, Fasi 2-4 da fare.
+Ultimo aggiornamento: 2026-07-31 — **Fasi 1, 2 e 4 completate lato codice.** Resta
+la Fase 3, che non si fa da qui: serve generare l'APK su PWABuilder e incollare la
+fingerprint. Finché non esiste una release, la card di download non compare.
 
 **Obiettivo finale:** un bottone in Impostazioni che scarica l'APK di tvBoss, così
 che il sito si usi come un'app installata.
@@ -24,7 +26,7 @@ Da qui l'ordine: PWA installabile → dominio predisposto → APK firmato → bo
 
 ---
 
-## Stato attuale (aggiornato il 2026-07-30, a Fase 1 conclusa)
+## Stato attuale (aggiornato il 2026-07-31, a Fasi 1, 2 e 4 concluse)
 
 | Cosa | Stato |
 |---|---|
@@ -35,24 +37,48 @@ Da qui l'ordine: PWA installabile → dominio predisposto → APK firmato → bo
 | Icone | `favicon.png` 32, `icon-180.png` 180, `pwa-192x192`, `pwa-512x512`, `pwa-512x512-maskable`. Tutte generate da `npm run icons` |
 | Sorgente logo | `icon-source.png` in root, PNG 754×751 (era `icon.jpg`, estensione sbagliata) |
 | Resize immagini | `sharp` come devDependency + `scripts/generate-icons.mjs` |
-| `.well-known/` in `public/` | **viene copiato** in `dist/` da Vite (verificato con un probe) → nessun workaround per `assetlinks.json` |
-| Deploy | Vercel, nessun `vercel.json` |
-| Toolchain Android | `java` non installato → Bubblewrap in locale richiederebbe JDK 17 + Android SDK |
+| `.well-known/` in `public/` | **viene copiato** in `dist/` da Vite (verificato sul build) → nessun workaround per `assetlinks.json` |
+| `assetlinks.json` | esiste, col package definitivo. `sha256_cert_fingerprints` vuoto in attesa della Fase 3 |
+| Package Android | `com.fedevespi.tvboss`, definito in `src/lib/apk.ts` e importato da `vite.config.ts` |
+| APK | **non ancora generato.** `APK_RELEASE` è `null`, quindi la card di download non compare |
+| Deploy | Vercel su `https://tv-time-new.vercel.app`, nessun `vercel.json` (e non serve: l'APK starà su GitHub Releases) |
+| ⛔ Produzione | pubblica **`master`** (`f2bd0dd`), che **non ha la PWA**: manifest, `sw.js` e icone 512 sono 404 live. Tutto il lavoro è su `tvboss-pwa`, mai unito — vedi il prerequisito più sotto |
+| Toolchain Android | `java` non installato → Bubblewrap in locale richiederebbe JDK 17 + Android SDK. Si usa PWABuilder |
 
 ---
 
-## Decisioni ancora aperte
+## Decisioni fissate (2026-07-31)
 
-1. **Dominio di produzione.** Serve l'URL esatto: una TWA è legata a **una sola
-   origine**, e cambiarla dopo significa ricompilare e rifirmare.
-2. **Hosting dell'APK.** GitHub Releases (consigliato: nessun binario da qualche MB
-   nel repo, più versioning e conteggio download gratis) oppure `public/` sul sito
-   (più semplice, ma l'APK finisce in git e va ricommittato ad ogni rebuild).
-   *Rimandata di proposito: si decide quando l'APK esiste davvero.*
-3. **Package name Android.** Da fissare una volta e **mai più cambiare**, è
-   l'identità dell'app per Android. Proposta: `it.advenias.tvboss`.
-4. **Play Store sì/no.** Si può decidere dopo: PWABuilder produce già anche l'AAB,
-   che è il formato richiesto dal negozio.
+1. **Package name: `com.fedevespi.tvboss`.** Definito una volta in
+   `src/lib/apk.ts` (`ANDROID_PACKAGE_NAME`), da cui `vite.config.ts` lo importa
+   per il manifest: così non può divergere fra le due. La terza copia è
+   `public/.well-known/assetlinks.json`, che è un file di dati e non può
+   importarlo — lì lo script della Fase 3 non lo tocca mai, per non riscriverlo
+   per sbaglio. **Non si cambia più:** un package diverso è un'app diversa, che
+   non si installa sopra quella già presente sui dispositivi.
+2. **Origine: `https://tv-time-new.vercel.app`** — il dominio Vercel predefinito.
+   È l'URL da dare a PWABuilder. Se in futuro si passa a un dominio custom,
+   l'APK va rigenerato e rifirmato: una TWA è legata a una sola origine.
+3. **Hosting dell'APK: GitHub Releases.** Nessun binario da megabyte nella storia
+   di git, più versioning e conteggio download gratis.
+4. **Play Store: rimandato.** PWABuilder produce già anche l'AAB, quindi la
+   decisione non costa nulla dopo. Se si fa, servono anche la fingerprint di
+   Google (vedi Fase 3), l'account sviluppatore da 25 $ e la scheda del negozio.
+
+### Il modello di aggiornamento, che è il motivo per cui l'ordine è questo
+
+L'APK **non contiene l'app**: contiene l'istruzione di aprire l'origine di
+produzione a schermo pieno. Quindi codice, pagine, feature e fix arrivano dal
+sito, e si ricompila solo cambiando **nome, icona, package, dominio o versione da
+distribuire**. In pratica: una volta, e poi quasi mai.
+
+Due conseguenze da ricordare la prima volta che si ricompila:
+
+- il nuovo APK va firmato **con lo stesso keystore**, altrimenti Android rifiuta
+  l'installazione sopra l'app esistente (`App not installed`) e gli utenti devono
+  disinstallare e reinstallare a mano;
+- chi ha già l'app **non riceve il nuovo APK da sé**: il sideload non ha
+  aggiornamenti automatici. È l'unico motivo pratico per considerare il Play Store.
 
 ---
 
@@ -99,6 +125,11 @@ Android, la resa della maskable nel launcher, e Lighthouse → Installability su
 deploy Vercel. L'installabilità richiede HTTPS e localhost è esentato, quindi la
 preview locale non la dimostra.
 
+> ⚠️ Il 2026-07-31 si è scoperto **perché** quelle verifiche non erano ancora
+> possibili: la PWA non è mai arrivata in produzione, perché Vercel pubblica
+> `master` e la Fase 1 vive su `tvboss-pwa`. Vedi il prerequisito più sotto: le
+> tre verifiche restano da fare, ma dopo il merge.
+
 > **Nota sul modello di aggiornamento.** Da adesso ci sono due livelli di cache:
 > `lib/localCache.ts` su localStorage e il service worker. Con `autoUpdate` il SW
 > continua a servire la shell precedente fino al reload successivo — è la
@@ -106,51 +137,128 @@ preview locale non la dimostra.
 
 ---
 
-## Fase 2 — Predisporre il dominio per la TWA
+## Fase 2 — Predisporre il dominio per la TWA ✅ (fatta)
 
-- [ ] Fissare dominio di produzione e package name (decisioni aperte 1 e 3).
-- [ ] Creare `public/.well-known/assetlinks.json`: relation
-      `delegate_permission/common.handle_all_urls`, target `android_app` con
-      `package_name` e `sha256_cert_fingerprints`. La fingerprint arriva dalla
-      Fase 3, quindi il file si completa dopo — ma il percorso si può predisporre.
-- [ ] Nessun `vercel.json` serve per servirlo: già verificato che Vite copia
-      `.well-known/` in `dist/`.
-- [ ] Verificare col tester Digital Asset Links di Google **prima** di compilare.
+- [x] Package name fissato: `com.fedevespi.tvboss` (decisione 1).
+- [x] `public/.well-known/assetlinks.json` creato: relation
+      `delegate_permission/common.handle_all_urls`, target `android_app` col
+      package. **`sha256_cert_fingerprints` è un array vuoto**, e non è una
+      dimenticanza: la fingerprint esiste solo dopo la Fase 3, e un array vuoto
+      dice il vero — nessuna app è ancora autorizzata. Un valore finto lì
+      direbbe una bugia che poi bisogna ricordarsi di correggere.
+- [x] `npm run assetlinks -- <fingerprint>` per riempirlo
+      (`scripts/set-assetlinks-fingerprint.mjs`). Vale uno script perché il modo
+      tipico di rompere una TWA è sbagliare questo file, e il sintomo è muto:
+      normalizza maiuscole e separatori, rifiuta una SHA-1 spacciata per SHA-256
+      dicendolo esplicitamente, accetta la seconda fingerprint del Play Store, e
+      non riscrive mai il `package_name`.
+- [x] Verificato sul build che Vite copia `.well-known/` in `dist/`: nessun
+      `vercel.json` serve.
+- [x] Verificato che il service worker **non** precacha `assetlinks.json`:
+      `globPatterns` non include i `.json`, e in più `navigateFallbackDenylist`
+      tiene `/.well-known/` fuori dal fallback SPA. Confermato sul `sw.js`
+      generato — l'unica occorrenza di `well-known` è la denylist.
+- [x] Manifest: `related_applications` col package e
+      `prefer_related_applications: false`. Serve a `getInstalledRelatedApps()`
+      (vedi Fase 4). ⚠️ Quel `false` va lasciato stare: a `true` Chrome smette di
+      emettere `beforeinstallprompt` e il bottone della Fase 1 muore in silenzio.
+- [ ] Verificare col tester Digital Asset Links di Google — **possibile solo dopo
+      la Fase 3**, perché prima non c'è nessuna fingerprint da verificare.
 
 ---
 
-## Fase 3 — Generare e firmare l'APK
+## ⛔ Prerequisito scoperto il 2026-07-31: la PWA non è in produzione
 
-- [ ] PWABuilder.com → URL del sito → Android → Generate. Restituisce APK (per il
-      sideload), AAB (per il Play Store), il keystore e il contenuto già pronto di
-      `assetlinks.json`. È il percorso preferito perché `java` non è installato e
-      Bubblewrap in locale richiederebbe JDK 17 più l'Android SDK.
-- [ ] Salvare keystore, password e alias in un password manager, **fuori dal
-      repo**. Perso il keystore, gli APK già installati non sono più aggiornabili:
-      gli utenti dovrebbero disinstallare e reinstallare a mano.
-- [ ] Incollare la fingerprint SHA-256 in `assetlinks.json`, deployare, e solo
-      **dopo** verificare.
+Verificato con `curl` su `https://tv-time-new.vercel.app`: l'origine di
+produzione **non serve ancora la PWA**. Tutti i file che una TWA pretende
+rispondono 404.
+
+| URL | Live | Atteso |
+|---|---|---|
+| `/` | 200, ma con `<title>tvTime</title>` | `tvBoss` |
+| `/manifest.webmanifest` | **404** | 200 `application/manifest+json` |
+| `/sw.js` | **404** | 200 |
+| `/registerSW.js` | **404** | 200 |
+| `/pwa-512x512-maskable.png` | **404** | 200 |
+| `/.well-known/assetlinks.json` | **404** | 200 (dopo il deploy della Fase 2) |
+
+Il motivo: Vercel pubblica **`master`**, che è fermo a `f2bd0dd`, mentre la
+rinomina in tvBoss e tutte le Fasi 1-2-4 stanno sul branch **`tvboss-pwa`**, mai
+unito. L'HTML in produzione contiene ancora il `<link rel="manifest">` scritto a
+mano che punta al 404 — proprio la riga che la Fase 1 ha rimosso.
+
+**Conseguenza pratica:** non serve a niente aprire PWABuilder adesso. Legge il
+manifest dal sito live, e lì non c'è. Prima va unito `tvboss-pwa` in `master` e
+atteso il deploy, poi si rifà questo controllo.
+
+- [ ] Merge di `tvboss-pwa` in `master` e deploy.
+- [ ] Ripetere il controllo qui sopra: tutti 200 prima di proseguire.
+
+---
+
+## Fase 3 — Generare e firmare l'APK ⬅️ **il passo che resta**
+
+Non si può fare da riga di comando qui: `java` non è installato e Bubblewrap in
+locale richiederebbe JDK 17 più l'Android SDK. Si fa dal browser, una volta.
+
+- [ ] **Prima il prerequisito qui sopra:** PWABuilder legge il manifest dal sito
+      live, quindi la PWA deve essere già in produzione.
+- [ ] PWABuilder.com → `https://tv-time-new.vercel.app` → **Android** → *Generate*. I campi da
+      controllare: Package ID **`com.fedevespi.tvboss`**, versione `1.0.0` /
+      versionCode `1`, display mode `standalone`, Signing key **New** (è la prima
+      volta: sarà PWABuilder a generare il keystore).
+- [ ] Nello zip che restituisce: l'APK firmato (sideload), l'AAB (Play Store),
+      `signing.keystore` e `assetlinks.json` già compilato.
+- [ ] Salvare **keystore, password e alias** in un password manager, fuori dal
+      repo. Perso il keystore, gli APK già installati non sono più aggiornabili.
+- [ ] `npm run assetlinks -- <fingerprint-SHA-256>`, poi commit e deploy. In
+      quest'ordine: la verifica legge il file dal sito live, quindi deve esserci
+      già quando l'APK viene installato.
+- [ ] Verificare sul tester Digital Asset Links di Google.
 - [ ] Provare su un dispositivo reale. Se in cima all'app compare la barra degli
       indirizzi di Chrome, `assetlinks.json` non è stato verificato: è il sintomo
       preciso da cercare, non un problema di grafica.
+- [ ] Pubblicare l'APK come asset di una release GitHub (decisione 3).
 
 ---
 
-## Fase 4 — Il bottone di download
+## Fase 4 — Il bottone di download ✅ (fatta, dormiente)
 
-- [ ] Scegliere l'hosting (decisione aperta 2).
-- [ ] Card in Impostazioni con nome file, versione e peso. Mostrarla **solo su
-      Android** (`/Android/i.test(navigator.userAgent)`) e nasconderla se l'app sta
-      già girando come TWA o in standalone: offrire il download dell'APK dentro
-      l'APK non ha senso.
-- [ ] Scrivere nella UI che Android chiederà di consentire l'installazione da fonti
-      sconosciute e che Chrome mostrerà un avviso sul tipo di file. Un utente non
+Il codice c'è tutto. **Per accenderlo basta un'unica modifica:** compilare
+`APK_RELEASE` in `src/lib/apk.ts` con `version`, `url` dell'asset GitHub e
+`sizeBytes`. Finché resta `null` la card non compare — invece di offrire un link
+rotto per i mesi in cui l'APK non esiste.
+
+- [x] Hosting scelto: GitHub Releases (decisione 3).
+- [x] `DownloadApkCard.tsx` con nome file, versione e peso. Il nome file è
+      ricavato dall'URL (`apkFileName`) invece di essere un campo a parte: due
+      campi che devono coincidere sono due campi che possono divergere.
+- [x] `useApkDownload.ts` decide quando mostrarla: solo Android, solo fuori da
+      standalone/TWA (offrire l'APK dentro l'APK non ha senso), e non a chi ha
+      già l'app installata — quest'ultimo tramite `getInstalledRelatedApps()`.
+      Dove quell'API manca non si sa nulla e **la card si mostra**: proporre un
+      download superfluo è meno grave che nascondere l'unico modo di installare.
+- [x] Rilevamento piattaforma spostato in `src/lib/platform.ts`, condiviso con
+      `useInstallPrompt`: erano gli stessi controlli in due posti, e in due posti
+      divergono. Aggiunto `isTwa()` (referrer `android-app://`), in OR col
+      display-mode perché nessuno dei due regge da solo — il referrer non
+      sopravvive a un reload.
+- [x] Nella card sta scritto che Chrome avviserà sul tipo di file e che Android
+      chiederà di consentire l'installazione da questa fonte. Un utente non
       avvisato legge quegli avvisi come "il sito è rotto".
-- [ ] Se l'APK viene servito da `public/`: con l'attributo `download` Vercel va
-      bene così com'è (`application/octet-stream`). Un `vercel.json` che imposti
-      `application/vnd.android.package-archive` è opzionale, non necessario.
-- [ ] Dire da qualche parte (Info o la card stessa) che l'app si aggiorna da sé col
-      sito: nessun nuovo APK da scaricare per i cambi di contenuto.
+- [x] E che l'app si aggiorna da sé insieme al sito: nessun APK da riscaricare
+      per i cambi di contenuto.
+- [x] Nessun `vercel.json`: l'APK sta su GitHub, che lo serve già come allegato.
+      Per lo stesso motivo la card **non** usa l'attributo `download`, che i
+      browser ignorano cross-origin.
+
+### Una cosa da decidere quando l'APK esisterà davvero
+
+Su Chrome Android le due card possono comparire insieme: "Installa app" (PWA, un
+tap) e "App per Android" (APK, con gli avvisi di sideload). Oggi non succede,
+perché `APK_RELEASE` è `null`. Restano entrambe di proposito — l'utente vede le
+due strade e sceglie — ma se sullo schermo risultasse confuso, il posto dove
+intervenire è l'ordine o la visibilità delle card in `Settings.tsx`.
 
 ---
 

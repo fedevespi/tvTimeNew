@@ -1,6 +1,6 @@
 # tvBoss — Sviluppo
 
-Ultimo aggiornamento: 2026-07-30 (Rinominata l'app da tvTime a tvBoss con il logo in header/login/registrazione/Info; PWA installabile attiva — Fase 1 di `PWA_APK.md`, il cui obiettivo finale è l'APK scaricabile)
+Ultimo aggiornamento: 2026-07-31 (Predisposto l'APK Android: `assetlinks.json` col package `com.fedevespi.tvboss`, script `npm run assetlinks`, e card di download in Impostazioni già scritta ma dormiente finché non esiste una release — Fasi 2 e 4 di `PWA_APK.md`. Resta la Fase 3, che si fa su PWABuilder)
 
 ---
 
@@ -125,6 +125,7 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Toggle tema luce/scuro con persistenza localStorage
 - [x] Importazione liste tramite file ZIP o JSON di TV Time (`ImportZipCard.tsx`, `importer.ts`)
 - [x] Card "Installa app" (`InstallAppCard.tsx`, `useInstallPrompt.ts`): prompt nativo su Chromium, istruzioni manuali su iOS, nascosta se già installata o non supportata
+- [x] Card "App per Android" (`DownloadApkCard.tsx`, `useApkDownload.ts`): scarica l'APK con nome file, versione e peso, e avvisa in anticipo degli avvisi di sideload. Si mostra solo su Android fuori da standalone/TWA e non a chi ha già l'app (`getInstalledRelatedApps()`). **Dormiente:** `APK_RELEASE` in `lib/apk.ts` è `null` finché non esiste una release, e con `null` la card non compare
 - [x] Link a pagina Informazioni
 - [x] Bottone logout
 - [x] Route protetta (`/settings`)
@@ -198,6 +199,8 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 
 - **Node.js**: il progetto richiede Node >= 20 per il plugin PWA. Requisito soddisfatto (v20.19.1)
 - **PWA**: attiva (`vite-plugin-pwa` in `vite.config.ts`). Manifest e service worker sono **generati dal build**, non scritti a mano: `index.html` non deve contenere un `<link rel="manifest">`, perché il plugin inietta il proprio e quello a mano resterebbe duplicato. Il service worker **non gira in `vite dev`**: per provarlo serve `npm run build && npm run preview`. Cache a runtime solo per le immagini TMDB; Supabase è dichiarato `NetworkOnly` di proposito. Piano per arrivare all'APK scaricabile in [`PWA_APK.md`](PWA_APK.md)
+- **APK Android (TWA)**: l'APK è un guscio che apre il sito live, quindi **non va rigenerato a ogni deploy** — il contenuto arriva dal sito e l'app lo mostra al lancio successivo. Si ricompila solo cambiando nome, icona, package, dominio o versione da distribuire, e in quel caso va firmato **con lo stesso keystore**, altrimenti Android rifiuta l'installazione sopra l'app esistente. Package definitivo `com.fedevespi.tvboss`, definito in `src/lib/apk.ts` e importato da `vite.config.ts` per il manifest. Dettagli e passi rimasti in [`PWA_APK.md`](PWA_APK.md)
+- **`assetlinks.json`**: `public/.well-known/assetlinks.json` è ciò che autorizza l'APK ad aprire il sito senza la barra degli indirizzi. Non si modifica a mano: `npm run assetlinks -- <fingerprint-SHA-256>` valida e normalizza (il tipico errore è incollare la SHA-1, che si somiglia). Se nella TWA compare la barra degli indirizzi di Chrome, è questo il file da guardare — non è un problema di grafica
 - **Icone**: tutte quelle in `public/` sono generate da `scripts/generate-icons.mjs` (`npm run icons`) a partire da `icon-source.png`. Modificarle a mano significa perderle al prossimo `npm run icons`: si cambia la sorgente e si rigenera
 - **Supabase**: email conferma disabilitata per sviluppo (da riabilitare in produzione)
 - **TMDB**: lingua italiana (`it-IT`) per tutte le chiamate API
@@ -224,7 +227,9 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Toast di errore per fallimenti Supabase (voto/commento/stato)
 - [x] Placeholder poster per immagini mancanti
 - [x] Abilitare PWA (Fase 1 di [`PWA_APK.md`](PWA_APK.md): manifest, service worker, icone 192/512, bottone "Installa app"). Resta da confermare su dispositivo Android e sul deploy HTTPS
-- [ ] APK scaricabile da Impostazioni (Fasi 2-4 di [`PWA_APK.md`](PWA_APK.md))
+- [x] Predisporre il dominio per la TWA e scrivere la card di download (Fasi 2 e 4 di [`PWA_APK.md`](PWA_APK.md))
+- [ ] **Portare la PWA in produzione**: `https://tv-time-new.vercel.app` pubblica `master`, che è fermo a prima della rinomina in tvBoss — manifest, `sw.js` e icone 512 sono 404 live. Serve il merge di `tvboss-pwa` in `master`, ed è il prerequisito di tutto il resto
+- [ ] APK scaricabile da Impostazioni: resta la Fase 3 (generare e firmare l'APK su PWABuilder, incollare la fingerprint con `npm run assetlinks`, pubblicare la release), possibile solo a PWA già in produzione
 - [ ] Riabilitare email conferma per produzione
 - [x] Deploy su Vercel
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { isIOS, isStandalone } from '@/lib/platform'
 
 /**
  * `beforeinstallprompt` non è nei tipi standard del DOM: è una specifica solo
@@ -7,23 +8,6 @@ import { useCallback, useEffect, useState } from 'react'
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
-
-/** L'app è già aperta come applicazione installata, non nel browser. */
-function isStandalone(): boolean {
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    // Safari su iOS non implementa `display-mode` e usa una proprietà tutta sua.
-    (navigator as Navigator & { standalone?: boolean }).standalone === true
-  )
-}
-
-function isIOS(): boolean {
-  return (
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    // iPadOS 13+ si dichiara "MacIntel": il touch è ciò che lo distingue da un Mac.
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  )
 }
 
 /**

@@ -2,6 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
+// Unica definizione del package Android: qui e in public/.well-known/assetlinks.json
+// deve comparire la stessa stringa, e importarla evita che divergano.
+import { ANDROID_PACKAGE_NAME } from './src/lib/apk'
 
 export default defineConfig({
   plugins: [
@@ -29,14 +32,23 @@ export default defineConfig({
           // il badge è rimpicciolito su fondo pieno (vedi scripts/generate-icons.mjs).
           { src: 'pwa-512x512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
+        // Dichiarare l'app Android è ciò che abilita `getInstalledRelatedApps()`:
+        // è così che la card di download sa di non mostrarsi a chi ha già l'APK
+        // (src/hooks/useApkDownload.ts).
+        related_applications: [{ platform: 'play', id: ANDROID_PACKAGE_NAME }],
+        // Deve restare `false`. A `true` Chrome smette di emettere
+        // `beforeinstallprompt`, e il bottone "Installa app" della Fase 1 muore
+        // senza dare segno di sé.
+        prefer_related_applications: false,
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         cleanupOutdatedCaches: true,
         // App a pagina singola: ogni navigazione sconosciuta va servita da index.html.
         navigateFallback: '/index.html',
-        // `.well-known` resta fuori: ci andrà assetlinks.json per la TWA (fase 2 di
-        // docs/PWA_APK.md), che deve arrivare dalla rete e non dalla shell dell'app.
+        // `.well-known` resta fuori: contiene assetlinks.json per la TWA, che deve
+        // arrivare dalla rete e non dalla shell dell'app. (Il precache non lo
+        // toccherebbe comunque, perché `globPatterns` non include i .json.)
         navigateFallbackDenylist: [/^\/\.well-known\//],
         runtimeCaching: [
           {
