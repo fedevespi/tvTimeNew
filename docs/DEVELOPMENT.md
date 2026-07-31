@@ -124,7 +124,7 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Info account (email utente)
 - [x] Toggle tema luce/scuro con persistenza localStorage
 - [x] Importazione liste tramite file ZIP o JSON di TV Time (`ImportZipCard.tsx`, `importer.ts`)
-- [x] Card "Installa app" (`InstallAppCard.tsx`, `useInstallPrompt.ts`): prompt nativo su Chromium, istruzioni manuali su iOS, nascosta se già installata o non supportata. **Su Android non compare** quando esiste un APK: là si offre solo quello, che dà icona nel launcher e nessuna barra degli indirizzi. La regola sta in `useInstallPrompt` (`supersededByApk`), non nella pagina, così vale per chiunque consulti l'hook
+- [x] Card "Installa app" (`InstallAppCard.tsx`): **solo su iPhone/iPad**, con le istruzioni «Condividi → Aggiungi alla schermata Home», e nascosta se l'app è già aperta dalla schermata Home. Niente bottone, perché Safari non emette mai `beforeinstallprompt`. Su Android si offre l'APK e su desktop nulla: iOS è l'unica piattaforma dove non esiste alternativa. La gestione del prompt nativo (`useInstallPrompt.ts`) è stata rimossa quando la card è diventata iOS-only, perché diventava codice irraggiungibile
 - [x] Card "App per Android" (`DownloadApkCard.tsx`, `useApkDownload.ts`): scarica l'APK con nome file, versione e peso, e avvisa in anticipo degli avvisi di sideload. Si mostra solo su Android fuori da standalone/TWA e non a chi ha già l'app (`getInstalledRelatedApps()`). **Dormiente:** `APK_RELEASE` in `lib/apk.ts` è `null` finché non esiste una release, e con `null` la card non compare
 - [x] Link a pagina Informazioni
 - [x] Bottone logout

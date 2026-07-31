@@ -308,36 +308,39 @@ riportare `APK_RELEASE` a `null` fa sparire la card invece di offrire un 404.
       Per lo stesso motivo la card **non** usa l'attributo `download`, che i
       browser ignorano cross-origin.
 
-### Su Android si offre solo l'APK (deciso il 2026-07-31)
+### Una sola card per piattaforma (deciso il 2026-07-31)
 
 Per un attimo le due card comparivano insieme su Chrome Android — "Installa app"
 (PWA) e "App per Android" (APK) — ed era confuso: due inviti a installare la
-stessa app sulla stessa schermata. Ora su Android resta **solo l'APK**, che è
-anche il risultato migliore: icona nel launcher, nessuna barra degli indirizzi.
+stessa app sulla stessa schermata. La regola adesso è **una card sola, quella
+giusta per la piattaforma**:
 
-La soppressione sta in `useInstallPrompt`, non in `Settings.tsx`:
+| Piattaforma | Cosa si vede |
+|---|---|
+| Android (browser) | **App per Android** — l'APK, che dà icona nel launcher e nessuna barra degli indirizzi |
+| iPhone / iPad | **Installa app** — «Condividi → Aggiungi alla schermata Home» |
+| Desktop | Niente |
+| Dentro l'app (TWA o PWA installata) | Niente: non c'è nulla da installare |
 
-```ts
-const supersededByApk = APK_RELEASE !== null && isAndroid()
-```
+Il criterio non è "quale piattaforma preferiamo" ma **dove esiste un'alternativa
+migliore**. Su Android l'APK è il risultato superiore, quindi la PWA non si
+pubblicizza. Su desktop installare la PWA era un extra: non valeva una card in una
+pagina di Impostazioni dove ogni riga dovrebbe servire a qualcosa. **iOS è l'unico
+posto senza alternativa:** fuori dall'App Store non si installa niente, quindi
+quelle istruzioni sono il solo modo in cui tvBoss diventa un'app su iPhone — ed è
+per questo che lì la card resta.
 
-Lì perché è l'hook che *decide se proporre l'installazione*, quindi la regola vale
-per qualunque punto della UI la consulti, oggi e domani. Messa nella pagina
-sarebbe stata una condizione da ricordarsi di replicare.
+Conseguenza sul codice, che è la parte da non ribaltare per sbaglio:
+`InstallAppCard` è diventata **iOS-only e senza bottone**, e con ciò tutta la
+gestione di `beforeinstallprompt` è stata rimossa (`useInstallPrompt.ts`
+eliminato). Safari non emette mai quell'evento, quindi non era più una capacità
+inutilizzata: era codice irraggiungibile che suggeriva il contrario. Se un giorno
+si volesse riproporre l'installazione PWA su Android o desktop, quella logica va
+riscritta — sta nella storia di git, non in un ramo `if` spento.
 
-Tre conseguenze volute:
-
-- **iOS e desktop non cambiano.** L'APK non li riguarda, e lì la card
-  d'installazione è l'unica strada — su iPhone in particolare è la sola possibile.
-- **Non è una porta chiusa.** Chrome mantiene il proprio "Installa app" nel menu,
-  quindi chi preferisce la PWA la ottiene comunque: abbiamo smesso di
-  pubblicizzarla dove esiste un'alternativa migliore, non di permetterla.
-- **Su Android, a chi ha già l'app, non compare nulla** — la card di download si
-  nasconde via `getInstalledRelatedApps()` e quella d'installazione è soppressa. È
-  corretto: chi ha l'app non ha niente da installare.
-
-Il legame va tenuto presente se un giorno `APK_RELEASE` tornasse `null`: la card
-d'installazione ricomparirebbe da sé su Android, che è il comportamento giusto.
+Nota: togliere la card non chiude la porta alla PWA. Chrome mantiene il proprio
+"Installa app" nel menu, quindi su Android e desktop chi la vuole la ottiene: si è
+smesso di pubblicizzarla dove c'è di meglio, non di permetterla.
 
 ---
 
