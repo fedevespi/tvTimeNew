@@ -1,7 +1,8 @@
 # tvBoss — Da sito a app installabile (PWA → APK)
 
-Ultimo aggiornamento: 2026-07-31 — **Fasi 1, 2 e 4 completate lato codice.** Resta
-la Fase 3, che non si fa da qui: serve generare l'APK su PWABuilder e incollare la
+Ultimo aggiornamento: 2026-07-31 — **Fasi 1, 2 e 4 fatte, e la PWA è in
+produzione** su `https://tv-time-new.vercel.app` (verificato live). Resta la
+**Fase 3**, che non si fa da qui: generare l'APK su PWABuilder e incollare la
 fingerprint. Finché non esiste una release, la card di download non compare.
 
 **Obiettivo finale:** un bottone in Impostazioni che scarica l'APK di tvBoss, così
@@ -42,7 +43,7 @@ Da qui l'ordine: PWA installabile → dominio predisposto → APK firmato → bo
 | Package Android | `com.fedevespi.tvboss`, definito in `src/lib/apk.ts` e importato da `vite.config.ts` |
 | APK | **non ancora generato.** `APK_RELEASE` è `null`, quindi la card di download non compare |
 | Deploy | Vercel su `https://tv-time-new.vercel.app`, nessun `vercel.json` (e non serve: l'APK starà su GitHub Releases) |
-| ⛔ Produzione | pubblica **`master`** (`f2bd0dd`), che **non ha la PWA**: manifest, `sw.js` e icone 512 sono 404 live. Tutto il lavoro è su `tvboss-pwa`, mai unito — vedi il prerequisito più sotto |
+| Produzione | pubblica **`master`**, allineato a `7808a28`: manifest, service worker, icone e `assetlinks.json` verificati a 200 live |
 | Toolchain Android | `java` non installato → Bubblewrap in locale richiederebbe JDK 17 + Android SDK. Si usa PWABuilder |
 
 ---
@@ -125,10 +126,11 @@ Android, la resa della maskable nel launcher, e Lighthouse → Installability su
 deploy Vercel. L'installabilità richiede HTTPS e localhost è esentato, quindi la
 preview locale non la dimostra.
 
-> ⚠️ Il 2026-07-31 si è scoperto **perché** quelle verifiche non erano ancora
-> possibili: la PWA non è mai arrivata in produzione, perché Vercel pubblica
-> `master` e la Fase 1 vive su `tvboss-pwa`. Vedi il prerequisito più sotto: le
-> tre verifiche restano da fare, ma dopo il merge.
+> Il 2026-07-31 si è scoperto **perché** quelle verifiche non erano ancora
+> possibili: la PWA non era mai arrivata in produzione, perché Vercel pubblica
+> `master` mentre la Fase 1 viveva su `tvboss-pwa`. Risolto lo stesso giorno col
+> merge — vedi la sezione qui sotto. Le tre verifiche restano da fare, ma ora
+> l'origine di produzione le rende possibili.
 
 > **Nota sul modello di aggiornamento.** Da adesso ci sono due livelli di cache:
 > `lib/localCache.ts` su localStorage e il service worker. Con `autoUpdate` il SW
@@ -167,32 +169,39 @@ preview locale non la dimostra.
 
 ---
 
-## ⛔ Prerequisito scoperto il 2026-07-31: la PWA non è in produzione
+## La PWA è in produzione ✅ (2026-07-31)
 
-Verificato con `curl` su `https://tv-time-new.vercel.app`: l'origine di
-produzione **non serve ancora la PWA**. Tutti i file che una TWA pretende
-rispondono 404.
+C'è stato un momento in cui non lo era, e vale la pena tenerne traccia perché è
+un errore che può ripetersi: Vercel pubblica **`master`**, ma la rinomina in
+tvBoss e tutte le Fasi 1-2-4 stavano su **`tvboss-pwa`**, mai unito. Il sito live
+era fermo a `f2bd0dd`, con `<title>tvTime</title>` e il `<link rel="manifest">`
+scritto a mano che puntava a un 404 — proprio la riga che la Fase 1 aveva
+rimosso. Nessuna delle verifiche della Fase 1 era quindi mai stata possibile, e
+aprire PWABuilder avrebbe letto un sito senza manifest.
 
-| URL | Live | Atteso |
-|---|---|---|
-| `/` | 200, ma con `<title>tvTime</title>` | `tvBoss` |
-| `/manifest.webmanifest` | **404** | 200 `application/manifest+json` |
-| `/sw.js` | **404** | 200 |
-| `/registerSW.js` | **404** | 200 |
-| `/pwa-512x512-maskable.png` | **404** | 200 |
-| `/.well-known/assetlinks.json` | **404** | 200 (dopo il deploy della Fase 2) |
+Risolto col fast-forward di `tvboss-pwa` in `master` (`7808a28`). **Il branch di
+lavoro non è la produzione: il merge in `master` è un passo del piano, non un
+dettaglio di igiene del repository.**
 
-Il motivo: Vercel pubblica **`master`**, che è fermo a `f2bd0dd`, mentre la
-rinomina in tvBoss e tutte le Fasi 1-2-4 stanno sul branch **`tvboss-pwa`**, mai
-unito. L'HTML in produzione contiene ancora il `<link rel="manifest">` scritto a
-mano che punta al 404 — proprio la riga che la Fase 1 ha rimosso.
+Ricontrollato con `curl` dopo il deploy — tutto su
+`https://tv-time-new.vercel.app`:
 
-**Conseguenza pratica:** non serve a niente aprire PWABuilder adesso. Legge il
-manifest dal sito live, e lì non c'è. Prima va unito `tvboss-pwa` in `master` e
-atteso il deploy, poi si rifà questo controllo.
+| URL | Esito |
+|---|---|
+| `/` | 200, `<title>tvBoss</title>`, **un solo** `rel="manifest"` (iniettato dal plugin) |
+| `/manifest.webmanifest` | 200 `application/manifest+json`, con `related_applications` e `prefer_related_applications: false` |
+| `/sw.js`, `/registerSW.js` | 200 `application/javascript` |
+| `/pwa-192x192`, `/pwa-512x512`, `/pwa-512x512-maskable`, `/icon-180` | 200 `image/png` |
+| `/.well-known/assetlinks.json` | 200 `application/json`, package `com.fedevespi.tvboss`, fingerprint ancora vuote |
 
-- [ ] Merge di `tvboss-pwa` in `master` e deploy.
-- [ ] Ripetere il controllo qui sopra: tutti 200 prima di proseguire.
+Il `; charset=utf-8` che Vercel aggiunge al content-type di `assetlinks.json` va
+bene: la verifica di Google guarda il tipo `application/json`, non il parametro.
+Annotato perché a prima vista sembra un problema e non lo è.
+
+**Cosa questo abilita da subito**, senza aspettare l'APK: il prompt "Installa
+app" su Chrome Android, la resa della maskable nel launcher e Lighthouse →
+Installability sono ora verificabili, perché l'origine è in HTTPS e non è
+localhost.
 
 ---
 
@@ -201,8 +210,7 @@ atteso il deploy, poi si rifà questo controllo.
 Non si può fare da riga di comando qui: `java` non è installato e Bubblewrap in
 locale richiederebbe JDK 17 più l'Android SDK. Si fa dal browser, una volta.
 
-- [ ] **Prima il prerequisito qui sopra:** PWABuilder legge il manifest dal sito
-      live, quindi la PWA deve essere già in produzione.
+- [x] PWA in produzione: prerequisito soddisfatto (sezione qui sopra).
 - [ ] PWABuilder.com → `https://tv-time-new.vercel.app` → **Android** → *Generate*. I campi da
       controllare: Package ID **`com.fedevespi.tvboss`**, versione `1.0.0` /
       versionCode `1`, display mode `standalone`, Signing key **New** (è la prima

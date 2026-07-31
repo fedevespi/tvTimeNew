@@ -1,6 +1,6 @@
 # tvBoss — Sviluppo
 
-Ultimo aggiornamento: 2026-07-31 (Predisposto l'APK Android: `assetlinks.json` col package `com.fedevespi.tvboss`, script `npm run assetlinks`, e card di download in Impostazioni già scritta ma dormiente finché non esiste una release — Fasi 2 e 4 di `PWA_APK.md`. Resta la Fase 3, che si fa su PWABuilder)
+Ultimo aggiornamento: 2026-07-31 (Predisposto l'APK Android: `assetlinks.json` col package `com.fedevespi.tvboss`, script `npm run assetlinks`, e card di download in Impostazioni già scritta ma dormiente finché non esiste una release — Fasi 2 e 4 di `PWA_APK.md`. Inoltre la PWA è **finalmente in produzione**: era rimasta sul branch `tvboss-pwa` mentre Vercel pubblica `master`. Resta la Fase 3, che si fa su PWABuilder)
 
 ---
 
@@ -226,10 +226,10 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Gestione errori TMDB (messaggio + retry, nessun crash)
 - [x] Toast di errore per fallimenti Supabase (voto/commento/stato)
 - [x] Placeholder poster per immagini mancanti
-- [x] Abilitare PWA (Fase 1 di [`PWA_APK.md`](PWA_APK.md): manifest, service worker, icone 192/512, bottone "Installa app"). Resta da confermare su dispositivo Android e sul deploy HTTPS
+- [x] Abilitare PWA (Fase 1 di [`PWA_APK.md`](PWA_APK.md): manifest, service worker, icone 192/512, bottone "Installa app"). Verificata live sul deploy HTTPS; resta da confermare su un dispositivo Android reale (prompt di installazione, resa della maskable nel launcher, Lighthouse → Installability)
 - [x] Predisporre il dominio per la TWA e scrivere la card di download (Fasi 2 e 4 di [`PWA_APK.md`](PWA_APK.md))
-- [ ] **Portare la PWA in produzione**: `https://tv-time-new.vercel.app` pubblica `master`, che è fermo a prima della rinomina in tvBoss — manifest, `sw.js` e icone 512 sono 404 live. Serve il merge di `tvboss-pwa` in `master`, ed è il prerequisito di tutto il resto
-- [ ] APK scaricabile da Impostazioni: resta la Fase 3 (generare e firmare l'APK su PWABuilder, incollare la fingerprint con `npm run assetlinks`, pubblicare la release), possibile solo a PWA già in produzione
+- [x] **PWA in produzione** su `https://tv-time-new.vercel.app`: il lavoro stava su `tvboss-pwa` mentre Vercel pubblica `master`, quindi il sito live era fermo a prima della rinomina in tvBoss. Risolto col merge; manifest, service worker, icone e `assetlinks.json` verificati a 200 live
+- [ ] APK scaricabile da Impostazioni: resta la Fase 3 (generare e firmare l'APK su PWABuilder, incollare la fingerprint con `npm run assetlinks`, pubblicare la release e compilare `APK_RELEASE`)
 - [ ] Riabilitare email conferma per produzione
 - [x] Deploy su Vercel
 
