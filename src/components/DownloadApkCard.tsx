@@ -27,11 +27,12 @@ export function DownloadApkCard() {
         </div>
         <a
           href={release.url}
-          // L'APK sta su GitHub: `download` verrebbe ignorato perché l'origine è
-          // diversa, ed è GitHub stesso a servirlo come allegato. Nuova scheda
-          // per non far uscire l'utente dall'app durante il redirect.
-          target="_blank"
-          rel="noopener noreferrer"
+          // `download` scarica sul posto invece di navigare, e funziona perché
+          // l'APK è servito dalla nostra origine (cross-origin i browser lo
+          // ignorano). Niente `target="_blank"`: una scheda nuova resterebbe
+          // vuota dopo il download, e con l'URL su GitHub veniva perfino
+          // dirottata all'app GitHub — vedi il commento in lib/apk.ts.
+          download
           className="px-4 py-2 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors shrink-0"
         >
           Scarica

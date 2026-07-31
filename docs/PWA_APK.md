@@ -64,8 +64,19 @@ Da qui l'ordine: PWA installabile → dominio predisposto → APK firmato → bo
 2. **Origine: `https://tv-time-new.vercel.app`** — il dominio Vercel predefinito.
    È l'URL da dare a PWABuilder. Se in futuro si passa a un dominio custom,
    l'APK va rigenerato e rifirmato: una TWA è legata a una sola origine.
-3. **Hosting dell'APK: GitHub Releases.** Nessun binario da megabyte nella storia
-   di git, più versioning e conteggio download gratis.
+3. **Hosting dell'APK: `public/` sul nostro dominio.** ⚠️ *Decisione ribaltata il
+   2026-07-31, dopo averla provata.* Era GitHub Releases, per non mettere binari
+   da megabyte nella storia di git. Non funziona: **`github.com` dichiara App
+   Links per `com.github.android`**, quindi su Android il link di download veniva
+   dirottato all'app GitHub invece di scaricare il file — lo stesso meccanismo di
+   `assetlinks.json` che fa aprire tvBoss a schermo pieno, qui contro di noi. E
+   non c'è ripiego via JavaScript: gli asset GitHub **non mandano header CORS**,
+   quindi nemmeno un fetch+blob è possibile. Servire dalla nostra origine è
+   l'unico modo di avere un download diretto, e in più fa funzionare l'attributo
+   `download`, che i browser ignorano cross-origin. Costo: ~1,9 MB in git a ogni
+   ricompilazione dell'APK, che però avviene quasi mai. La release GitHub `v1.0.0`
+   resta come archivio versionato e per l'AAB, ma **non è ciò che scaricano gli
+   utenti**: la fonte di verità è `public/tvBoss.apk`.
 4. **Play Store: rimandato.** PWABuilder produce già anche l'AAB, quindi la
    decisione non costa nulla dopo. Se si fa, servono anche la fingerprint di
    Google (vedi Fase 3), l'account sviluppatore da 25 $ e la scheda del negozio.
@@ -264,7 +275,8 @@ volta sola.
       `Content-Disposition: attachment` e `Content-Type:
       application/vnd.android.package-archive`, e che l'**SHA-256 del file
       scaricato coincida** con quello dell'APK locale di cui era stato letto
-      package name e firma: gli utenti ricevono lo stesso file verificato.
+      package name e firma. La release **resta come archivio versionato e per
+      l'AAB**, ma non è la fonte del download: vedi la decisione 3.
 
 ---
 
@@ -285,7 +297,13 @@ vista sembrano sbagliate:
 Il meccanismo del `null` resta e va tenuto: se un giorno si ritirasse la release,
 riportare `APK_RELEASE` a `null` fa sparire la card invece di offrire un 404.
 
-- [x] Hosting scelto: GitHub Releases (decisione 3).
+- [x] Hosting: `public/tvBoss.apk`, servito dalla nostra origine — non GitHub
+      Releases, per il motivo nella decisione 3. `.gitignore` ignora `*.apk` ma
+      con l'eccezione `!public/*.apk`, così il pacchetto PWABuilder resta fuori e
+      il solo file servito agli utenti è versionato.
+- [x] Verificato che il service worker **non** precachi l'APK: `globPatterns` non
+      include i `.apk` e il precache resta a 16 voci / ~841 KiB. Un'aggiunta da
+      1,9 MB lì sarebbe stata un peso scaricato da tutti, anche da chi non installa.
 - [x] `DownloadApkCard.tsx` con nome file, versione e peso. Il nome file è
       ricavato dall'URL (`apkFileName`) invece di essere un campo a parte: due
       campi che devono coincidere sono due campi che possono divergere.
@@ -304,9 +322,12 @@ riportare `APK_RELEASE` a `null` fa sparire la card invece di offrire un 404.
       avvisato legge quegli avvisi come "il sito è rotto".
 - [x] E che l'app si aggiorna da sé insieme al sito: nessun APK da riscaricare
       per i cambi di contenuto.
-- [x] Nessun `vercel.json`: l'APK sta su GitHub, che lo serve già come allegato.
-      Per lo stesso motivo la card **non** usa l'attributo `download`, che i
-      browser ignorano cross-origin.
+- [x] La card usa l'attributo **`download`** e **non** `target="_blank"`: stessa
+      origine, quindi `download` viene rispettato e il file scende sul posto. Una
+      scheda nuova sarebbe rimasta vuota dopo il download, e con l'URL su GitHub
+      veniva perfino dirottata all'app GitHub.
+- [x] Nessun `vercel.json` necessario: con `download` il content-type con cui
+      Vercel serve il `.apk` non cambia il risultato.
 
 ### Una sola card per piattaforma (deciso il 2026-07-31)
 

@@ -53,3 +53,16 @@ tvBoss - Google Play package/
 signing-key-info.txt
 *.apk
 *.aab
+
+# Eccezione: l'APK servito agli utenti sta in public/ e va versionato.
+#
+# Ospitarlo su GitHub Releases sembrava meglio (niente binari in git), ma non
+# funziona: github.com dichiara App Links per com.github.android, quindi su
+# Android il link di download veniva dirottato all'app GitHub invece di scaricare
+# il file. Servirlo dal nostro dominio e' l'unico modo di avere un download
+# diretto — e nemmeno un fetch+blob e' possibile, perche' gli asset GitHub non
+# mandano header CORS.
+#
+# Il costo e' ~1,9 MB in git a ogni ricompilazione dell'APK, che pero' avviene
+# quasi mai: il contenuto dell'app arriva dal sito.
+!public/*.apk

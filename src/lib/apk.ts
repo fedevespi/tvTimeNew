@@ -25,7 +25,19 @@ export const ANDROID_PACKAGE_NAME = 'com.fedevespi.tvboss'
 export interface ApkRelease {
   /** `versionName` dell'APK, la stessa che Android mostra nelle info dell'app. */
   version: string
-  /** URL diretto all'asset `.apk` della release su GitHub. */
+  /**
+   * Percorso dell'APK **sul nostro dominio** (da `public/`), non su GitHub.
+   *
+   * Ospitarlo su GitHub Releases sembrava la scelta migliore — niente binari in
+   * git — ma non funziona: `github.com` dichiara App Links per
+   * `com.github.android`, quindi su Android il link veniva dirottato all'app
+   * GitHub invece di scaricare il file. È lo stesso meccanismo di
+   * `assetlinks.json` che fa aprire tvBoss a schermo pieno, qui però contro di
+   * noi. Neanche un fetch+blob è possibile: gli asset GitHub non mandano CORS.
+   *
+   * Stessa origine significa anche che l'attributo `download` funziona: i browser
+   * lo ignorano cross-origin.
+   */
   url: string
   /** Peso del file in byte, per dirlo all'utente *prima* che scarichi. */
   sizeBytes: number
@@ -43,12 +55,10 @@ export const APK_RELEASE: ApkRelease | null = {
   // (`v1.0.0`): e' questa la stringa che Android mostra nelle info dell'app,
   // quindi e' quella con cui un utente puo' capire se ha gia' l'ultima versione.
   version: '1.0.0.0',
-  // URL fissato al tag, non `/releases/latest/download/`. Quello punterebbe sempre
-  // all'ultima release, ma `version` e `sizeBytes` qui sotto restano scritti nel
-  // codice: se un giorno si pubblicasse una release senza aggiornarli, la card
-  // annuncerebbe un file diverso da quello che serve. Fissato al tag, i tre campi
-  // descrivono sempre lo stesso file — al massimo vecchio, ma non sbagliato.
-  url: 'https://github.com/fedevespi/tvTimeNew/releases/download/v1.0.0/tvBoss.apk',
+  // Serve `public/tvBoss.apk`. Sostituendolo vanno aggiornati anche `version` e
+  // `sizeBytes` qui sotto: sono i tre campi che descrivono lo stesso file, e
+  // disallineati farebbero annunciare alla card qualcosa che non e' cio' che scarica.
+  url: '/tvBoss.apk',
   sizeBytes: 1900273,
 }
 
