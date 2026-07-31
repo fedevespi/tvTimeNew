@@ -1,11 +1,10 @@
 # tvBoss — Da sito a app installabile (PWA → APK)
 
-Ultimo aggiornamento: 2026-07-31 — **APK generato, firmato e autorizzato.** La PWA
-è in produzione su `https://tv-time-new.vercel.app` e l'API di Google verifica il
-legame col package `com.fedevespi.tvboss`. Restano tre cose, tutte fuori dal
-codice: mettere il **keystore** al sicuro, provare l'APK su un telefono, e
-pubblicarlo come release GitHub — poi si compila `APK_RELEASE` e la card di
-download si accende.
+Ultimo aggiornamento: 2026-07-31 — **L'APK funziona su dispositivo reale**, senza
+barra degli indirizzi: il legame sito-app è verificato da Google e confermato in
+pratica. Keystore al sicuro. **Resta un solo passo:** pubblicare `tvBoss.apk` come
+asset di una release GitHub e compilare `APK_RELEASE`, che accende la card di
+download in Impostazioni.
 
 **Obiettivo finale:** un bottone in Impostazioni che scarica l'APK di tvBoss, così
 che il sito si usi come un'app installata.
@@ -123,10 +122,11 @@ app" nativo di Chrome; su iPhone è l'unica strada possibile.
       come `application/manifest+json`, `sw.js` e `registerSW.js` a 200, regole
       `CacheFirst` e `NetworkOnly` presenti nel service worker generato.
 
-**Cosa resta, e richiede un dispositivo reale:** il prompt "Installa app" su Chrome
-Android, la resa della maskable nel launcher, e Lighthouse → Installability sul
-deploy Vercel. L'installabilità richiede HTTPS e localhost è esentato, quindi la
-preview locale non la dimostra.
+**Cosa resta, e richiede un dispositivo reale:** la resa della maskable nel
+launcher è confermata (vedi Fase 3, provata via APK). Non ancora verificati, ma
+ormai marginali dato che la TWA funziona: il prompt "Installa app" di Chrome
+Android sul percorso PWA puro, e Lighthouse → Installability. L'installabilità
+richiede HTTPS e localhost è esentato, quindi la preview locale non la dimostra.
 
 > Il 2026-07-31 si è scoperto **perché** quelle verifiche non erano ancora
 > possibili: la PWA non era mai arrivata in produzione, perché Vercel pubblica
@@ -239,16 +239,25 @@ volta sola.
       inutilizzabile per gli utenti.
 - [x] Pacchetto tenuto fuori dal repo via `.gitignore` (cartella, `*.keystore`,
       `*.jks`, `signing-key-info.txt`, `*.apk`, `*.aab`).
-- [ ] ⚠️ **Salvare `signing.keystore` + alias e password in un password manager**,
-      fuori dal repo. Non è igiene, è l'unica copia: perso il keystore gli APK già
-      installati non sono più aggiornabili; trapelato, qualcuno può firmare
-      aggiornamenti a nome di tvBoss che Android installerebbe sopra l'app degli
-      utenti.
-- [ ] Provare su un dispositivo reale. Se in cima all'app compare la barra degli
-      indirizzi di Chrome, `assetlinks.json` non è stato verificato: è il sintomo
-      preciso da cercare, non un problema di grafica.
+- [x] `signing.keystore` + alias e password messi in un password manager, fuori dal
+      repo. Non è igiene, è l'unica copia: perso il keystore gli APK già installati
+      non sono più aggiornabili; trapelato, qualcuno può firmare aggiornamenti a
+      nome di tvBoss che Android installerebbe sopra l'app degli utenti.
+- [x] **Provato su un dispositivo reale**, e funziona. Verificato in particolare:
+      - nessuna barra degli indirizzi in cima → `assetlinks.json` verificato. È il
+        sintomo da cercare per primo, e non è un problema di grafica;
+      - la sessione Supabase **sopravvive alla chiusura dell'app**: il
+        `localStorage` nella TWA è quello di Chrome e persiste;
+      - la card "Installa app" **non** compare dentro la TWA, quindi
+        `isStandalone()` in `lib/platform.ts` riconosce il contesto;
+      - tasto indietro coerente col router lato client;
+      - in modalità aereo compare l'interfaccia con un errore di caricamento, non
+        la pagina di errore di Chrome: la shell arriva dal precache. Le liste no,
+        ed è voluto — Supabase è `NetworkOnly`;
+      - icona maskable corretta nel launcher, senza contorni dal ritaglio.
 - [ ] Pubblicare `tvBoss.apk` come asset di una release GitHub. `gh` non è
-      installato, quindi si fa dall'interfaccia web.
+      installato, quindi si fa dall'interfaccia web. **È l'ultimo passo**: poi si
+      compila `APK_RELEASE` e la card di download si accende.
 
 ---
 

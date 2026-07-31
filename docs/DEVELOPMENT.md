@@ -229,7 +229,7 @@ MVP funzionante. Auth, database, navigazione, pagine principali e anti-spoiler i
 - [x] Abilitare PWA (Fase 1 di [`PWA_APK.md`](PWA_APK.md): manifest, service worker, icone 192/512, bottone "Installa app"). Verificata live sul deploy HTTPS; resta da confermare su un dispositivo Android reale (prompt di installazione, resa della maskable nel launcher, Lighthouse → Installability)
 - [x] Predisporre il dominio per la TWA e scrivere la card di download (Fasi 2 e 4 di [`PWA_APK.md`](PWA_APK.md))
 - [x] **PWA in produzione** su `https://tv-time-new.vercel.app`: il lavoro stava su `tvboss-pwa` mentre Vercel pubblica `master`, quindi il sito live era fermo a prima della rinomina in tvBoss. Risolto col merge; manifest, service worker, icone e `assetlinks.json` verificati a 200 live
-- [x] **APK generato, firmato e autorizzato** (Fase 3): package `com.fedevespi.tvboss`, `versionName` 1.0.0.0, fingerprint in `assetlinks.json` e legame **verificato dall'API Digital Asset Links di Google**. Il pacchetto PWABuilder (keystore incluso) è escluso da git
+- [x] **APK generato, firmato e funzionante su dispositivo reale** (Fase 3): package `com.fedevespi.tvboss`, `versionName` 1.0.0.0, fingerprint in `assetlinks.json` e legame **verificato dall'API Digital Asset Links di Google**. Provato sul telefono: nessuna barra degli indirizzi, sessione Supabase che sopravvive alla chiusura, card "Installa app" correttamente assente dentro la TWA, degrado pulito offline. Il pacchetto PWABuilder (keystore incluso) è escluso da git
 - [ ] APK scaricabile da Impostazioni: resta da pubblicare `tvBoss.apk` come asset di una release GitHub e compilare `APK_RELEASE` in `src/lib/apk.ts`, che accende la card
 - [ ] Riabilitare email conferma per produzione
 - [x] Deploy su Vercel
