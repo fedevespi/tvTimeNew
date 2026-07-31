@@ -16,9 +16,9 @@ export function DownloadApkCard() {
   return (
     <div className="bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur rounded-xl border border-slate-200 dark:border-slate-700/50 p-4">
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-accent/15 rounded-xl shrink-0">
-          <Smartphone size={20} className="text-accent" />
-        </div>
+        {/* Icona inline come la riga Modalità e Importazione: nelle righe di
+            Impostazioni il badge riquadrato non si usa (vedi DESIGN_SYSTEM.md). */}
+        <Smartphone size={20} className="text-accent shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-slate-900 dark:text-white font-medium">App per Android</p>
           <p className="text-slate-500 dark:text-slate-400 text-sm truncate">

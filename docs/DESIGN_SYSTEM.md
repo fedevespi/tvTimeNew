@@ -38,17 +38,30 @@ I contenitori in tutte le pagine (Impostazioni, Dettagli, Liste, Info) seguono q
 ```
 
 ### 2. Badge Icona (Icon Wrapper & Inline Icons)
-Le icone dentro i riquadri delle Impostazioni e dei form possono essere rese inline o racchiuse in un wrapper:
+
+**I tre trattamenti non sono interscambiabili: si scelgono in base al ruolo della
+riga, non a gusto.** Questa sezione elencava le tre varianti come alternative
+equivalenti, ed è stata la causa di errori ripetuti — chi scriveva una card nuova
+prendeva quella sbagliata restando formalmente nelle regole.
+
+**Nelle righe di Impostazioni si usa sempre l'icona inline.** Sono righe d'azione
+tutte di pari livello (Modalità, Importazione, Installa app, App per Android): il
+badge riquadrato ne farebbe risaltare una sull'altra senza motivo, e la rende
+visivamente simile al blocco Account, che invece è una cosa diversa.
+
 ```tsx
-{/* Icona Inline Diretta (come la sezione Modalità o Importazione) */}
+{/* Icona Inline Diretta — DEFAULT per le righe di Impostazioni e dei form.
+    Esempi: Modalità, Importazione, Installa app, App per Android. */}
 <Icona size={20} className="text-accent shrink-0" />
 
-{/* Wrapper Circolare (come Account Profilo) */}
+{/* Wrapper Circolare — SOLO per l'identità dell'utente (blocco Account).
+    Sta a indicare "questa è una persona", non un'azione: non riusarlo altrove. */}
 <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
   <Icona size={24} className="text-accent" />
 </div>
 
-{/* Wrapper Squadrato (rounded-xl) */}
+{/* Wrapper Squadrato (rounded-xl) — per elementi in evidenza FUORI da
+    Impostazioni. Nelle righe di Impostazioni non si usa. */}
 <div className="p-2.5 bg-accent/15 rounded-xl flex items-center justify-center shrink-0">
   <Icona size={20} className="text-accent" />
 </div>
